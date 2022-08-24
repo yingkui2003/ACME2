@@ -1,5 +1,5 @@
 # Revised ACME toolbox
-This revised ArcGIS toolbox derives cirque related metrics based on cirque outlines and a DEM. The major changes and added new tools include:
+This ArcGIS toolbox is a revision of the ACME toolbox (Spagnolo, M., Pellitero, R., Barr, I.D., Ely, J.C., Pellicer, X.M., Rea, B.R., 2017. ACME, a GIS tool for automated cirque metric extraction. Geomorphology 278, 280–286.) to derive cirque metrics based on cirque outlines and a DEM. The major changes and added new tools include:
 (1) A new tool is added to derive the cirque threshold points based on cirque outlines and the DEM.
 (2) The revised tool adds a new cirque metric, the A3D/A2D ratio, because it may not be derived correctly using the Area3D and Area2D derived from the orignal ACME tool. The reason is that
 the Area3D is derived from the surface volume analysis, which is based on the TIN. In some cases, the 3D area of the TIN is smaller than the Area2D derived from the polygon or raster. 
