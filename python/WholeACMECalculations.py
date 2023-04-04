@@ -479,20 +479,31 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
         cirqueASPECT_rad = (cirqueASPECT * math.pi / 180)
         cirqueASPECT_sin = Sin (cirqueASPECT_rad)
         cirqueASPECT_cos = Cos (cirqueASPECT_rad)
-        DTM_min = arcpy.GetRasterProperties_management(cirqueDTM, "MINIMUM")
-        row[1] = int(float(DTM_min.getOutput(0)))
-        DTM_max = arcpy.GetRasterProperties_management(cirqueDTM, "MAXIMUM")
-        row[2] = int(float(DTM_max.getOutput(0)))
-        row[3] = (row[2]-row[1])
-        DTM_mean = arcpy.GetRasterProperties_management(cirqueDTM, "MEAN")
-        row[4] = DTM_mean.getOutput(0)
-        SLOPE_mean = arcpy.GetRasterProperties_management(cirqueSLOPE, "MEAN")
-        row[6] = SLOPE_mean.getOutput(0)
 
-        ASPECT_sin_mean = arcpy.GetRasterProperties_management(cirqueASPECT_sin, "MEAN")
-        ASPECT_sin_mean_value = float(ASPECT_sin_mean.getOutput(0))
-        ASPECT_cos_mean = arcpy.GetRasterProperties_management(cirqueASPECT_cos, "MEAN")
-        ASPECT_cos_mean_value = float(ASPECT_cos_mean.getOutput(0))
+        ##Change the following codes to avoid the use of comma as a decimal separator
+        #DTM_min = arcpy.GetRasterProperties_management(cirqueDTM, "MINIMUM")
+        #row[1] = int(float(DTM_min.getOutput(0)))
+        row[1] = int(cirqueDTM.minimum)
+        #DTM_max = arcpy.GetRasterProperties_management(cirqueDTM, "MAXIMUM")
+        #row[2] = int(float(DTM_max.getOutput(0)))
+        row[2] = int(cirqueDTM.maximum)
+        row[3] = (row[2]-row[1])
+        #DTM_mean = arcpy.GetRasterProperties_management(cirqueDTM, "MEAN")
+        #row[4] = DTM_mean.getOutput(0)
+        row[4] = cirqueDTM.mean
+
+        #SLOPE_mean = arcpy.GetRasterProperties_management(cirqueSLOPE, "MEAN")
+        #row[6] = SLOPE_mean.getOutput(0)
+        row[6] = cirqueSLOPE.mean
+
+        #ASPECT_sin_mean = arcpy.GetRasterProperties_management(cirqueASPECT_sin, "MEAN")
+        #ASPECT_sin_mean_value = float(ASPECT_sin_mean.getOutput(0))
+        ASPECT_sin_mean_value = cirqueASPECT_sin.mean
+        
+        #ASPECT_cos_mean = arcpy.GetRasterProperties_management(cirqueASPECT_cos, "MEAN")
+        #ASPECT_cos_mean_value = float(ASPECT_cos_mean.getOutput(0))
+        ASPECT_cos_mean_value = cirqueASPECT_cos.mean
+
         if  ASPECT_sin_mean_value  > 0 and ASPECT_cos_mean_value > 0 :
             row [7] = float((math.atan (ASPECT_sin_mean_value/ASPECT_cos_mean_value))*180/math.pi)
         elif ASPECT_cos_mean_value < 0 :
