@@ -9,9 +9,9 @@ ACME v2 is a revision and extension of the ACME toolbox (Spagnolo, M., Pellitero
 line interval apporach, which are affected by the value of contour line interval. The revised toolbox derives the hypsometric metrics based on the highest mode of elevation values and the Elevation-relief ratio 
 in determining the hypsometric max and HI values, which is much faster and not affected by the contour line interval.
 
-(4) ACME v2 revised the plan closure calculation method to be consistent with the manual method used by Dr. I.S. Evans.
+(4) ACME v2 revises the plan closure calculation method to be consistent with the manual method used by Dr. I.S. Evans.
 
-(5) ACME v2 also improved the logic of the codes and fixed the memory allocation issue when processing a large amount of cirques.
+(5) ACME v2 also improves the logic of the codes and fixed the memory allocation issue when processing a large amount of cirques.
 
 Due to the end of support of ESRI for ArcGIS 10, ACME v2 is for ArcGIS Pro 2.8 or newer only. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. Please contact the developer if you need to run the tools in ArcGIS 10 for more instructions.
 
