@@ -16,13 +16,15 @@ in determining the hypsometric max and HI values, which is much faster and not a
 Due to the end of support of ESRI for ArcGIS 10, ACME v2 is for ArcGIS Pro 2.8 or newer only. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. Please contact the developer if you need to run the tools in ArcGIS 10 for more instructions.
 
 # Major tools within the toolbox
-The revised ACME toolbox includes 5 tools: 0. Derive Threshold Points from Cirque Outlines; 1. Length & Width; 2. Perimeter, Area & Circularity; 3. 3D statistics & Hypsometry, and Whole ACME calculations. 
+ACME v2 includes two toolsets. The first one is the Step by Step tools, which include 4 tools: 0. Derive Thresholds from Cirque Outlines, 1. Derive Dataset, Location, Size, Shape, Aspect, and Altitude Metrics, 2. Derive Axis-related Metrics, and 3. Derive Catchment Metrics. The second toolset is for the Whole Process, including two tools: Whole Calculations with Auto-derived Thresholds and Whole Calculations With Specified Thresholds.
 
-![image](https://user-images.githubusercontent.com/24683137/186520505-b6b0468f-86bf-444c-bb33-495e14091176.png)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/ca22039b-ab77-40c2-a66d-f7e2b462f436)
 
-"Derive Threshold Points from Cirque Outlines" is designed to determine the threshold points based on cirque outlines and a DEM. The idea is to determine the threshold point of a cirque as the intersection point of the cirque outline with the major stream (highest flow accumulation). This tool can handle the cirques with or without major overlaps each other. The following is the interface of this tool:
+"Derive Threshold Points from Cirque Outlines" is designed to determine the threshold points based on cirque outlines and a DEM. Two methods are developed to derive the threshold points automatically. The first method, mainstream exit, is to derive the threshold point as the intersection point between the cirque outline and the mainstream within the cirque. The second method, threshold midpoint, is to derive the threshold point as the middle point of the cirque threshold. The following is the interface of this tool:
 
-![image](https://user-images.githubusercontent.com/24683137/186521520-4b2b6140-4541-418a-854d-6838f2196ac2.png)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/9f43d33e-0402-4487-a837-18e17f87910f)
+
+
 
 "Length & Width" and "Perimeter, Area & Circularity" tools are the same with the orignal ACME other than the code revision for ArcGIS Pro.
 
