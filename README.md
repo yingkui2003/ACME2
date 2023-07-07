@@ -1,12 +1,17 @@
 # ACME v2 toolbox
 ACME v2 is a revision and extension of the ACME toolbox (Spagnolo, M., Pellitero, R., Barr, I.D., Ely, J.C., Pellicer, X.M., Rea, B.R., 2017. ACME, a GIS tool for automated cirque metric extraction. Geomorphology 278, 280–286.) to derive cirque metrics based on cirque outlines and a DEM. The major revisons and extensions include:
 (1) Expand to 48 cirque metrics, which are grouped into the dataset (projection, DEM_RES, Method), location (Lon, Lat, Easting, Northing), size (L. W, H, CS, Perimeter, A2D, A3D), shape (L_W, L_H, W_H, A3D_A2D, Circular, Slope_mean, Slope_max, Slope_min, Plan_clos, Prof_clos), aspect (Aspectmean, Asp_east, Asp_north), altitude (Z_min, Z_max, Z_mean, Z_median, Z_mid, Hypsomax, HI), axis-related (AxProfclos, Axhli, Axasp, Axamp, L_Exp_A, A_Exp_B, L_Exp_R2, L_Kcurv_C, L_Kcurv_R2, W_quad_C, W_quad_R2), and catchment-related metrics (Maxabalt, Pctabarea). 
-(2) A new tool is added to autumatically derive the cirque threshold points based on cirque outlines and the DEM. Two methods are developed to derive the threshold points automatically. The first method, mainstream exit, is to derive the threshold point as the intersection point between the cirque outline and the mainstream within the cirque. The second method, threshold midpoint, is to derive the threshold point as the middle point of the cirque threshold. The users can choose one method to derive the threshod points. The users can also provide their own threshold points. ACME v2 records the threshold point method and the DEM resolution in the attribute table for the comparision purpose.  
+
+(2) A new tool is added to autumatically derive the cirque threshold points based on cirque outlines and the DEM. Two methods are developed to derive the threshold points automatically. The first method, mainstream exit, is to derive the threshold point as the intersection point between the cirque outline and the mainstream within the cirque. The second method, threshold midpoint, is to derive the threshold point as the middle point of the cirque threshold. The users can choose one method to derive the threshod points. The users can also provide their own threshold points. ACME v2 records the threshold point method and the DEM resolution in the attribute table for the comparision purpose.
+  
 (3) ACME v2 combines the two tools of the orginal ACME for 3D statistics and Hypsometry calculation. The original ACME toolbox derived the hypsometric max and hypsometric intergal (HI) based on the contour
 line interval apporach, which are affected by the value of contour line interval. The revised toolbox derives the hypsometric metrics based on the highest mode of elevation values and the Elevation-relief ratio 
 in determining the hypsometric max and HI values, which is much faster and not affected by the contour line interval.
+
 (4) ACME v2 revised the plan closure calculation method to be consistent with the manual method used by Dr. I.S. Evans.
+
 (5) ACME v2 also improved the logic of the codes and fixed the memory allocation issue when processing a large amount of cirques.
+
 Due to the end of support of ESRI for ArcGIS 10, ACME v2 is for ArcGIS Pro 2.8 or newer only. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. Please contact the developer if you need to run the tools in ArcGIS 10 for more instructions.
 
 # Major tools within the toolbox
