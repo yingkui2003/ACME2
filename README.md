@@ -20,17 +20,18 @@ ACME v2 includes two toolsets. The first one is the Step by Step tools, which in
 
 ![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/ca22039b-ab77-40c2-a66d-f7e2b462f436)
 
-"Derive Threshold Points from Cirque Outlines" is designed to determine the threshold points based on cirque outlines and a DEM. Two methods are developed to derive the threshold points automatically. The first method, mainstream exit, is to derive the threshold point as the intersection point between the cirque outline and the mainstream within the cirque. The second method, threshold midpoint, is to derive the threshold point as the middle point of the cirque threshold. The following is the interface of this tool:
+"Derive Threshold Points from Cirque Outlines" derives cirque threshold points based on DEM and cirque polygons (outlines). The inputs include DEM, cirque outlines (polygons), and the method to derive the threshold points. This tool provides two methods, mainstream exit and threshold midpoint, to derive cirque threshold points. The output is the derived cirque threshold points. Make sure that the DEM and cirque outlines have the same projected coordinate system (UTM or other projected systems, not the latitudes and longitudes). The following is the interface of this tool:
 
 ![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/9f43d33e-0402-4487-a837-18e17f87910f)
 
 
 
-"Length & Width" and "Perimeter, Area & Circularity" tools are the same with the orignal ACME other than the code revision for ArcGIS Pro.
+"Derive Dataset, Location, Size, Shape, Aspect, and Altitude Metrics" derives the dataset, location, size, shape, aspect, and altitude parameters related to each cirque. The dataset metrics include projection, DEM_RES, and Method for threshold points. The location metrics include lon, lat, easting and northing. The size parameters include L (length), W (width), H (height), CS (cirque size), Perimeter, A2D (2D area), and A3D (3D area). The shape parameters include L_W (L/W ratio), L_H (L/H ratio), W_H (W/H ratio), A3D_A2D (A3D/A2D ratio), Circular (circularity), Slope_mean, Slope_max, Slope_min, Plan_clos (plan closure), and Prof_clos (profile closure). The aspect metrics include Aspectmean, Asp_east, and Asp_north. The altitude parameters include Z_min, Z_max, Z_mean, Z_median, Z_mid (middle altitude), Hypsomax, and HI. This tool includes four inputs: Input Cirque Outlines, Input DEM, Input Cirque Threshold points, and Threshold point method, and four outputs: Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques. Make sure that the DEM, cirque outlines, and cirque thresholds have the same projected coordinate system (UTM or other projected systems, not the latitudes and longitudes).
 
-![image](https://user-images.githubusercontent.com/24683137/186522003-4b974e5d-de8a-48be-830a-80d4e647ee9f.png)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/1ace55de-07bc-4e54-89d1-302fd95a4415)
 
-![image](https://user-images.githubusercontent.com/24683137/186522069-cd3e6c50-17c5-49e9-acc8-414f8307d090.png)
+
+
 
 "3D statistics & Hypsometry" is the revised tool to combine the orginal ACME toolbox for 3D statistics and Hypsometry calculation. 
 
