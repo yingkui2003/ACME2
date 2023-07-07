@@ -63,7 +63,7 @@ The toolboxes and tools have been tested in from ArcGIS Pro 2.8 to 3.1. Errors m
 Please report any errors or questions to Yingkui Li (yli32@utk.edu).
 
 # Cite this work
-Li Y., in preparation. TBD
+Li et al., in preparation. TBD
 
 # Contact info
 Yingkui Li
