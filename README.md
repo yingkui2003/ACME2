@@ -33,23 +33,31 @@ ACME v2 includes two toolsets. The first one is the Step by Step tools, which in
 
 
 
-"3D statistics & Hypsometry" is the revised tool to combine the orginal ACME toolbox for 3D statistics and Hypsometry calculation. 
+"Derive Axis-related Metrics" derives the axis-related cirque metrics, including Axprofclos, Axhli, Axasp, Axgrad and Axamp, and the axis-related curve-fitting parameters, including L_Exp_A, L_Exp_B, L_Exp_R2, L_Kcurv_C, L_Kcurv_R2, W_Quad_C, and W_Quad_R2., This tool includes two inputs: Input Cirque Outlines and Input DEM. The derived metrics are directly saved to the attribute table of the input cirque outlines. 
 
-![image](https://user-images.githubusercontent.com/24683137/186522395-ec91c9d0-b591-4101-9c71-57a39afecbe3.png)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/ece441b1-b950-4d9c-8ef7-521a781c7382)
 
-"Whole ACME calculations" is developed to derive all cirque metrics based on the inputs of cirque outlines and the DEM. In addtion to the cirque metrics, this tool also generate the cirque threshold points, cirque length and width features.
+"Derive Catchment Metrics" derives the two metrics, Maxabalt and Pctabarea, related to the catchment area of each cirque. This tool includes two inputs: Input Cirque Outlines and Input DEM. The derived metrics are directly saved to the attribute table of the input cirque outlines.
 
-![image](https://user-images.githubusercontent.com/24683137/186522720-b48b6f07-6f23-4b9e-9fa2-3147f724a7bb.png)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/526a70f2-1f75-4455-bd46-774fce21c0b5)
+
+
+"Whole Calculations with Auto-derived Thresholds" derives the 48 cirque metrics (dataset, location, size, shape, aspect, altitude, axis-related and catchment-related parameters) based on the input cirque outlines and a DEM. First, the cirque threshold points are automatically derived based on the section of the two methods (mainstream exit and threshold midpoint). Then, these cirque threshold points are used to derive threshold-related cirque metrics. Note that if the users have their own threshold points, use the other tool or step-by-step tools to derive cirque metrics., This tool includes three inputs: Input Cirque Outlines, Input DEM, and the threshold point method, and five outputs: Output threshold points, Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques.
+
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/26a0a2ee-0be5-4570-a3a7-7b42444bd9a3)
+
+" Whole Calculations With Specified Thresholds" derives the 48 cirque metrics (dataset, location, size, shape, aspect, altitude, axis-related and catchment-related parameters) based on the input cirque outlines, DEM, and cirque threshold points. Note that the user needs to provide the cirque thresholds, which can be derived by manual digitization or step 0 in the step-by-step tools., This tool includes three inputs: Input Cirque Outlines, Input DEM, and Input threshold points, and four outputs: Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques.
+
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/47e071a1-d740-411e-9df6-b8172d8f65aa)
 
 
 # How to download and use this toolbox in ArcGIS or ArcGIS Pro
 The github site includes the revised ACME toolbox (tbx) file and a python folder, including all python source codes associated with these tools. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
 
-![image](https://user-images.githubusercontent.com/24683137/186519537-8c7455ae-f69d-4d26-9ef1-13965c453a92.png)
 
-A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a RevisedACME-main folder with both the tbx file and the python folder and source code files. The user can use this toolbox, check the codes, and comtinue imporving this toolbox. Note that the codes for each tool are imported into the toolbox, so that the toolbox can be run just with the tbx file only. However, the users need to export the codes first to revise the codes. 
+A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with both the tbx file and the python folder and source code files. The user can use this toolbox, check the codes, and comtinue imporving this toolbox. Note that the codes for each tool are imported into the toolbox, so that the toolbox can be run just with the tbx file only. However, the users need to export the codes first to revise the codes. 
 
-The toolboxes and tools have been tested in ArcGIS 10.7, 10.8, 10.9 and ArcGIS Pro 2.8 and 2.9. Errors may occur if using other versions of ArcGIS or ArcGIS Pro. 
+The toolboxes and tools have been tested in from ArcGIS Pro 2.8 to 3.1. Errors may occur if using other versions of ArcGIS Pro. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. 
 
 Please report any errors or questions to Yingkui Li (yli32@utk.edu).
 
