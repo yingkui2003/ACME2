@@ -43,13 +43,15 @@ ACME v2 includes two toolsets. The first one is the Step by Step tools, which in
 
 
 
-"Whole Calculations with Auto-derived Thresholds" derives the 48 cirque metrics (dataset, location, size, shape, aspect, altitude, axis-related and catchment-related parameters) based on the input cirque outlines and a DEM. First, the cirque threshold points are automatically derived based on the section of the two methods (mainstream exit and threshold midpoint). Then, these cirque threshold points are used to derive threshold-related cirque metrics. Note that if the users have their own threshold points, use the other tool or step-by-step tools to derive cirque metrics., This tool includes three inputs: Input Cirque Outlines, Input DEM, and the threshold point method, and five outputs: Output threshold points, Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques.
+"Whole Calculations with Auto-derived Thresholds" records 3 dataset-related attributes and derives 48 cirque metrics (location, size, shape, aspect, altitude, axis-related and catchment-related parameters) based on the input cirque outlines and a DEM. First, the cirque threshold foci are automatically derived based on the section of the two methods (mainstream exit and threshold midpoint). Then, these cirque threshold foci are used to derive threshold-related cirque metrics. Note that if the users have their own threshold foci points, use the other tool or step-by-step tools to derive cirque metrics. This tool includes three inputs: Input Cirque Outlines, Input DEM, and the threshold point method, and five outputs: Output threshold points, Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques. Make sure that the input DEM and cirque outlines have the same projected coordinate system (UTM or other projected systems, not the latitudes and longitudes).
 
-![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/26a0a2ee-0be5-4570-a3a7-7b42444bd9a3)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/6a8209f9-55e2-425c-95ac-7fa354b5bc25)
 
-" Whole Calculations With Specified Thresholds" derives the 48 cirque metrics (dataset, location, size, shape, aspect, altitude, axis-related and catchment-related parameters) based on the input cirque outlines, DEM, and cirque threshold points. Note that the user needs to provide the cirque thresholds, which can be derived by manual digitization or step 0 in the step-by-step tools., This tool includes three inputs: Input Cirque Outlines, Input DEM, and Input threshold points, and four outputs: Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques.
 
-![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/47e071a1-d740-411e-9df6-b8172d8f65aa)
+" Whole Calculations With Specified Thresholds" records 3 dataset-related attributes and derives 48 cirque metrics (dataset, location, size, shape, aspect, altitude, axis-related and catchment-related parameters) based on the input cirque outlines, DEM, and cirque threshold points. Note that the user needs to provide the cirque thresholds, which can be derived by manual digitization or step 0 in the step-by-step tools. This tool includes three inputs: Input Cirque Outlines, Input DEM, and Input threshold points, and four outputs: Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques.
+
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/c5da7c61-2787-4918-be65-e2c6aa9b1ecd)
+
 
 
 # How to download and use this toolbox in ArcGIS or ArcGIS Pro
