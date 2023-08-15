@@ -28,20 +28,19 @@ ACME v2 includes two toolsets. The first one is the Step by Step tools, which in
 
 
 
-"Derive Dataset, Location, Size, Shape, Aspect, and Altitude Metrics" derives the dataset, location, size, shape, aspect, and altitude parameters related to each cirque. The dataset metrics include projection, DEM_RES, and Method for threshold points. The location metrics include lon, lat, easting and northing. The size parameters include L (length), W (width), H (height), CS (cirque size), Perimeter, A2D (2D area), and A3D (3D area). The shape parameters include L_W (L/W ratio), L_H (L/H ratio), W_H (W/H ratio), A3D_A2D (A3D/A2D ratio), Circular (circularity), Slope_mean, Slope_max, Slope_min, Plan_clos (plan closure), and Prof_clos (profile closure). The aspect metrics include Aspectmean, Asp_east, and Asp_north. The altitude parameters include Z_min, Z_max, Z_mean, Z_median, Z_mid (middle altitude), Hypsomax, and HI. This tool includes four inputs: Input Cirque Outlines, Input DEM, Input Cirque Threshold points, and Threshold point method, and four outputs: Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques. Make sure that the DEM, cirque outlines, and cirque thresholds have the same projected coordinate system (UTM or other projected systems, not the latitudes and longitudes).
+"Record Dataset Info and Derive Location, Size, Shape, Aspect, and Altitude Metrics" records dataset-related attributes and derives location, size, shape, aspect, and altitude parameters related to each cirque. The dataset-related attributes include projection, DEM_RES and the threshold focus method. The location metrics include lon, lat, easting and northing. The size parameters include L (length), W (width), H (height), CS (cirque size), Perimeter, A2D (2D area), and A3D (3D area). The shape parameters include L_W (L/W ratio), L_H (L/H ratio), W_H (W/H ratio), A3D_A2D (A3D/A2D ratio), Circular (circularity), Slope_mean, Slope_max, Slope_min, Slpgt33, Slplt20, Slp20to33, Plan_clos (plan closure), and Prof_clos (profile closure). The aspect metrics include Aspectmean, Asp_east, and Asp_north. The altitude parameters include Z_min, Z_max, Z_mean, Z_median, Z_mid (middle altitude), Hypsomax, and HI. This tool includes three inputs: Input Cirque Outlines, Input DEM, and Input Cirque Thresholds, and four outputs: Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques. Make sure that the DEM, cirque outlines, and cirque thresholds have the same projected coordinate system (UTM or other projected systems, not the latitudes and longitudes).
 
-![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/1ace55de-07bc-4e54-89d1-302fd95a4415)
-
-
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/206c5a13-098e-4d8a-837f-c8422546670e)
 
 
 "Derive Axis-related Metrics" derives the axis-related cirque metrics, including Axprofclos, Axhli, Axasp, Axgrad and Axamp, and the axis-related curve-fitting parameters, including L_Exp_A, L_Exp_B, L_Exp_R2, L_Kcurv_C, L_Kcurv_R2, W_Quad_C, and W_Quad_R2., This tool includes two inputs: Input Cirque Outlines and Input DEM. The derived metrics are directly saved to the attribute table of the input cirque outlines. 
 
-![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/ece441b1-b950-4d9c-8ef7-521a781c7382)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/f50b9b87-7b81-4400-b4d7-4a05fe20d53f)
 
 "Derive Catchment Metrics" derives the two metrics, Maxabalt and Pctabarea, related to the catchment area of each cirque. This tool includes two inputs: Input Cirque Outlines and Input DEM. The derived metrics are directly saved to the attribute table of the input cirque outlines.
 
-![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/526a70f2-1f75-4455-bd46-774fce21c0b5)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/12d7e4ae-e2b8-4c19-ab05-856621128621)
+
 
 
 "Whole Calculations with Auto-derived Thresholds" derives the 48 cirque metrics (dataset, location, size, shape, aspect, altitude, axis-related and catchment-related parameters) based on the input cirque outlines and a DEM. First, the cirque threshold points are automatically derived based on the section of the two methods (mainstream exit and threshold midpoint). Then, these cirque threshold points are used to derive threshold-related cirque metrics. Note that if the users have their own threshold points, use the other tool or step-by-step tools to derive cirque metrics., This tool includes three inputs: Input Cirque Outlines, Input DEM, and the threshold point method, and five outputs: Output threshold points, Output Length Features, Output Width Features, Output Mid-Alt Contours, and Output Cirques.
