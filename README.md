@@ -16,11 +16,12 @@ in determining the hypsometric max and HI values, which is faster and not affect
 Due to the end of support of ESRI for ArcGIS 10, ACME v2 is for ArcGIS Pro 2.8 or newer only. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. Please contact the developer if you need to run the tools in ArcGIS 10 for more instructions.
 
 # Major tools within the toolbox
-ACME v2 includes two toolsets. The first one is the Step by Step tools, which include 4 tools: 0. Derive Thresholds from Cirque Outlines, 1. Derive Dataset, Location, Size, Shape, Aspect, and Altitude Metrics, 2. Derive Axis-related Metrics, and 3. Derive Catchment Metrics. The second toolset is for the Whole Process, including two tools: Whole Calculations with Auto-derived Thresholds and Whole Calculations With Specified Thresholds.
+ACME v2 includes two toolsets. The first one is the Step by Step tools, which include 4 tools: 0. Derive Thresholds from Cirque Outlines, 1. Record Dataset Info and Derive Location, Size, Shape, Aspect, and Altitude Metrics, 2. Derive Axis-related Metrics, and 3. Derive Catchment Metrics. The second toolset is for the Whole Process, including two tools: Whole Calculations with Auto-derived Thresholds and Whole Calculations With Specified Thresholds.
 
-![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/ca22039b-ab77-40c2-a66d-f7e2b462f436)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/0187cfea-ef77-43a3-b2ed-248abd4ba4db)
 
-"Derive Threshold Points from Cirque Outlines" derives cirque threshold points based on DEM and cirque polygons (outlines). The inputs include DEM, cirque outlines (polygons), and the method to derive the threshold points. This tool provides two methods, mainstream exit and threshold midpoint, to derive cirque threshold points. The output is the derived cirque threshold points. Make sure that the DEM and cirque outlines have the same projected coordinate system (UTM or other projected systems, not the latitudes and longitudes). The following is the interface of this tool:
+
+"Derive Threshold Points from Cirque Outlines" derives cirque threshold focus points based on DEM and cirque polygons (outlines). The inputs include DEM, cirque outlines (polygons), and the method to derive the threshold focus points. This tool provides two methods, mainstream exit and threshold midpoint, to derive cirque threshold focus points. The output is the derived cirque threshold focus points. Make sure that the DEM and cirque outlines have the same projected coordinate system (UTM or other projected systems, not the latitudes and longitudes). The following is the interface of this tool:
 
 ![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/9f43d33e-0402-4487-a837-18e17f87910f)
 
