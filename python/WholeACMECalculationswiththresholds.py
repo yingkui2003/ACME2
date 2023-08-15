@@ -510,7 +510,7 @@ for field in new_fields:
     else:
         arcpy.AddField_management(cirques_copy, field, "DOUBLE",10, 3)
 
-new_fields = ("Slope_mean", "Slope_max", "Slope_min", "Aspectmean") ##All float variables count = 2
+new_fields = ("Slope_mean", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33", "Aspectmean") ##All float variables count = 4
 for field in new_fields:
     if field in Fieldlist:
         pass
@@ -791,18 +791,23 @@ midAltContur = arcpy.CreateFeatureclass_management("in_memory", "midAltContur", 
 #FcID = arcpy.Describe(cirques_copy).OIDFieldName
 FcID = "ID_cirque"
 
-fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_clos", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min")
+fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_clos", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33")
 volumetable = arcpy.env.scratchFolder + "\\volumetable.txt"
 contur = arcpy.env.scratchGDB + "\\contur"
 #startline = arcpy.env.scratchGDB + "\\startline"
 #endline = arcpy.env.scratchGDB + "\\endline"
+##it is better to calcuate the slope and aspect for the whole DEM first to keep the values for the whole outline
+DEM_slope = Slope(InputDEM)  
+DEM_aspect = Aspect(InputDEM)
 
 with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
     i = 0
     for row in cursor:
         cirqueDTM = ExtractByMask(InputDEM, row[0]) ##shape@
-        cirqueSLOPE = Slope(cirqueDTM)
-        cirqueASPECT = Aspect(cirqueDTM)
+        #cirqueSLOPE = Slope(cirqueDTM)  ##it is better to calcuate the slope and aspect for the whole DEM first to keep the values for the whole outline
+        #cirqueASPECT = Aspect(cirqueDTM)
+        cirqueSLOPE = ExtractByMask(DEM_slope, row[0])  ##it is better to calcuate the slope and aspect for the whole DEM first to keep the values for the whole outline
+        cirqueASPECT = ExtractByMask(DEM_aspect, row[0])
         cirqueASPECT_rad = (cirqueASPECT * math.pi / 180)
         cirqueASPECT_sin = Sin (cirqueASPECT_rad)
         cirqueASPECT_cos = Cos (cirqueASPECT_rad)
@@ -901,6 +906,18 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         index = np.argmax(counts)
         hypo_max = vals[index]
         row[11] = hypo_max
+
+        ##Derive the three added slope values: Slpgt33,Slplt20,Slp20to33
+        array = arcpy.RasterToNumPyArray(cirqueSLOPE,"","","",0)
+        slpArr = array[array > -1].astype(int) ##Get all slope cells 
+        total = len(slpArr)
+        slpgt33Arr = array[array > 33].astype(int) ##Get the slope greater than 33 degree
+        slpgt33 = len(slpgt33Arr)
+        slplt20Arr = array[array < 20].astype(int) ##Get the slope less than 20 degree
+        slplt20 = len(slplt20Arr)
+        row[20] = slpgt33 / total * 100 ##the percent of slope > 33 degree 
+        row[21] = slplt20 / total * 100 ##the percent of slope < 20 degree 
+        row[22] = (total - slpgt33 - slplt20) / total * 100        ##the percent of 20< slope < 33 degree
 
         #update cursor
         cursor.updateRow(row)

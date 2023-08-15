@@ -65,6 +65,7 @@ def Dist(x1,y1,x2,y2):
 def connect_major_line_sections(line):
     lineArray = arcpy.da.FeatureClassToNumPyArray(line,"SHAPE@LENGTH")
     lengths = np.array([item[0] for item in lineArray])
+    #arcpy.AddMessage(lengths)
     if len(lengths) == 1:
         return line
     startpnts = "in_memory\\startpnts"
@@ -114,7 +115,9 @@ def connect_major_line_sections(line):
         
         ##only connect the line when the distance between the start or end points
         ##of two line section is less than the minimum length of the two lines
-        if distArr[index] < min(start_line_length, end_line_length):
+        minlength = min(start_line_length, end_line_length)
+        mingap = min(minlength, 60)
+        if distArr[index] < mingap:
             #arcpy.AddMessage("Connect two lines")
             array = arcpy.Array([arcpy.Point(startpntX[start],startpntY[start]),arcpy.Point(endpntX[end], endpntY[end])])
             polyline = arcpy.Polyline(array)
@@ -155,6 +158,7 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
     arcpy.CopyFeatures_management(cirque_polys, cirquepolys)
 
     ##Check if the cirques have overlaps
+    '''
     b_Overlap = False
     outlines = arcpy.CopyFeatures_management(cirquepolys, arcpy.Geometry())
     for i in range(len(outlines)):
@@ -169,7 +173,7 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
                     break
         if b_Overlap:
             break
-
+    '''
     fillDEM =Fill(dem)  ##Fill the sink first
     fdir = FlowDirection(fillDEM,"NORMAL") ##Flow direction
     facc = FlowAccumulation(fdir) ##Flow accmulation
@@ -178,7 +182,8 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
     #count = int(countResult.getOutput(0))
     FcID = arcpy.Describe(cirquepolys).OIDFieldName
 
-
+    b_Overlap = True ##always use the overlapped apporach
+    
     cirquePoints = arcpy.CreateFeatureclass_management("in_memory", "cirquePoints","POINT","","","",cirque_polys)
 
     if b_Overlap == False:
@@ -193,7 +198,7 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
         ##Get the existing fields in cirquepolys
         exist_no_use_fields = [f.name for f in arcpy.ListFields(cirquepolys)] #List of current field names in outline layer
 
-        arcpy.AddField_management(cirquepolys, 'ID_CirqueID', 'Long', 6) ##OFID is not FID, but it is related to FID
+        arcpy.AddField_management(cirquepolys, 'ID_Cirque', 'Long', 6) ##OFID is not FID, but it is related to FID
         arcpy.CalculateField_management(cirquepolys,"ID_Cirque",str("!"+str(arcpy.Describe(cirquepolys).OIDFieldName)+"!"),"PYTHON_9.3")
 
         joinedpoints = "in_memory\\joinedpoints"
@@ -224,11 +229,18 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
             arcpy.DeleteField_management(joinedpoints, exist_no_use_fields[2:])
         arcpy.DeleteField_management(joinedpoints, ["Join_Count", "TARGET_FID", "grid_code"])
 
-        return joinedpoints
+        arcpy.CopyFeatures_management(joinedpoints, cirquePoints)
+        ##delete the temp dataset
+        arcpy.Delete_management (joinedpoints)
+
+        return cirquePoints
 
     else:
         sel_poly = "in_memory\\sel_poly"
+        sel_outline = "in_memory\\sel_outline"
+        outline_buf = "in_memory\\outline_buf"
         Singlepoint = "in_memory\\Singlepoint"
+        Singlepoint_ele = "in_memory\\Singlepoint_Ele"
         ##Need to loop for each cirque polygon to make sure that each cirque polygon has a threshold points
         countResult = arcpy.GetCount_management(cirquepolys)
         count = int(countResult.getOutput(0))
@@ -242,10 +254,20 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
             #arcpy.AddMessage(query)
             arcpy.Select_analysis(cirquepolys, sel_poly, query)
 
+            ##convert the polygon to polyline
+            arcpy.PolygonToLine_management(sel_poly, sel_outline)
+            #arcpy.analysis.Buffer(sel_outline, outline_buf, "10 Meters")
+
             PolyID = arcpy.Describe(sel_poly).OIDFieldName
             
             outZonalStatistics = ZonalStatistics(sel_poly, PolyID, facc, "MAXIMUM") #Find the maximum flowaccumulation point on the moriane feature
+
+            #LineID = arcpy.Describe(sel_outline).OIDFieldName
+            #outZonalStatistics = ZonalStatistics(sel_outline, LineID, facc, "MAXIMUM") #Find the maximum flowaccumulation point on the moriane feature
+
             outPour = Con(facc == outZonalStatistics,facc)  ##Determine the highest flowaccumuation part
+
+            ##Snap the outPour to the outline boundary
             
             arcpy.RasterToPoint_conversion(outPour, Singlepoint, "VALUE")
             arcpy.AddField_management(Singlepoint, 'ID_cirque', 'Long', 6) ##OFID is not FID, but it is related to FID
@@ -255,22 +277,41 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
                     cursor.updateRow(row)
             #delete cursors
             del row, cursor
-            
+
+            snapEnv1 = [sel_outline, "VERTEX", "30 Meter"]
+            snapEnv2 = [sel_outline, "EDGE", "30 Meter"]
+            arcpy.Snap_edit(Singlepoint, [snapEnv1, snapEnv2])           
             ##Make sure only one point produced, otherwise, add a new field with flag
             pntcountResult = arcpy.GetCount_management(Singlepoint)
             pntcount = int(pntcountResult.getOutput(0))
             if pntcount > 1:
-                arcpy.AddMessage("Some cirques include multiple points! These points are flagged as 1 in the attrbute table")
-                arcpy.AddField_management(Singlepoint, 'Flag', 'Long', 6) ##OFID is not FID, but it is related to FID
-                with arcpy.da.UpdateCursor(Singlepoint,("Flag")) as cursor:
+                arcpy.AddMessage("Some cirques include multiple points! choose the lowest one as the threshold point")
+                #arcpy.AddField_management(Singlepoint, 'Flag', 'Long', 6) ##OFID is not FID, but it is related to FID
+                #with arcpy.da.UpdateCursor(Singlepoint,("Flag")) as cursor:
+                #arcpy.CopyFeatures_management(Singlepoint, "d:\\temp\\singlepoint.shp")
+                ExtractValuesToPoints(Singlepoint, dem, Singlepoint_ele, "INTERPOLATE", "VALUE_ONLY")
+                pntarray = arcpy.da.FeatureClassToNumPyArray(Singlepoint_ele,"RASTERVALU")
+                pntElevs = np.array([item[0] for item in pntarray])
+                #arcpy.AddMessage(pntElevs)
+                minEleV = int(min(pntElevs))
+                with arcpy.da.UpdateCursor(Singlepoint_ele,("RASTERVALU")) as cursor:
+                    i = 0
                     for row in cursor:
-                        row[0] = 1
-                        cursor.updateRow(row)
+                        if (int(row[0]) > minEleV) or (i > 0): ##just keep one point
+                            cursor.deleteRow()
+                        else:
+                            i += 1
+                            
                 #delete cursors
                 del row, cursor
-            ##Append the single point to 
-            arcpy.Append_management(Singlepoint, cirquePoints, "NO_TEST") 
-
+                ##Snap the point to the outline
+                #arcpy.Snap_edit(Singlepoint_ele, [snapEnv1, snapEnv2])
+                ##Append the single point to 
+                arcpy.Append_management(Singlepoint_ele, cirquePoints, "NO_TEST") 
+            else:
+                ##Snap the point to the outline
+                #arcpy.Snap_edit(Singlepoint, [snapEnv1, snapEnv2])
+                arcpy.Append_management(Singlepoint, cirquePoints, "NO_TEST") 
         ##delete the temp dataset
         arcpy.Delete_management (sel_poly)
         arcpy.Delete_management (Singlepoint)
@@ -278,7 +319,7 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
         return cirquePoints
 
 
-def CirqueThresholds_midpoints(InputCirques, InputDEM, percentile):
+def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
     ##This method determines the cirque threshold mid-points by the lower 10th percentile of the elevation of the cirque outlines
     sel_poly = "in_memory\\sel_poly"
     cirque_line = "in_memory\\cirque_line"
@@ -324,7 +365,26 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM, percentile):
         Elevs = np.array([item[0] for item in pntArray])
         #arcpy.AddMessage(Elevs)
 
-        cutoff_elev = np.percentile(Elevs, percentile) ##get the 10th percentile elevation
+        midElev = (np.max(Elevs) + np.min(Elevs)) / 2
+        lowhalfElevs = Elevs[Elevs < midElev]
+        #binvalue = int((maxElev - minElev) /5)
+        prob, ele, _ = plt.hist(lowhalfElevs, bins = 20, cumulative = False)
+        #plt.show()
+        peak_prob_elev = ele[np.where(prob == prob.max())][0]
+        #arcpy.AddMessage("peak_prob_elev from histogram is: " + str(peak_prob_elev) )
+        ##Find the lowest prob elev above the peak_prob_elev
+        elev_above = ele[ele > peak_prob_elev]
+        prob_above = prob[ele[1:] > peak_prob_elev]
+        low_prob_elev = elev_above[np.where(prob_above == prob_above.min())][0]
+        if (low_prob_elev - peak_prob_elev) < 10:
+            low_prob_elev += 10
+        #arcpy.AddMessage("low_prob_elev from histogram is: " + str(low_prob_elev) )
+
+        cutoff_elev = (low_prob_elev + peak_prob_elev)/2 ##Use the center of the peak and low_prob elevation as the cutoff
+        
+        #cutoff_elev = peak_prob_elev + (midElev - peak_prob_elev)/3 ##add 1/3 elevation between the midelev and peak prob elevation, so that it can cover both threshold and valley sides 
+
+        #cutoff_elev = np.percentile(Elevs, percentile) ##get the 10th percentile elevation
         #arcpy.AddMessage("Cutoff Elevation from outline: " + str(cutoff_elev))
 
         ##Method 1: use the raster functions to get the cirque outlines within the lower elevations
@@ -341,15 +401,29 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM, percentile):
             #arcpy.AddMessage("multiple lines created, need to connect the lines")
             ##only connected major lines
             connect_major_line_sections(tmpline)
-        
+            '''
+            ##only keep the longest line section
+            lengths = np.array([item[0] for item in lineArray])
+            arcpy.AddMessage(lengths)
+            if len(lengths) > 1:
+                max_length = max(lengths)
+                with arcpy.da.UpdateCursor(tmpline,("SHAPE@LENGTH")) as cursor:
+                    for row in cursor:
+                        if row[0] < max_length:
+                            cursor.deleteRow()
+                #delete cursors
+                del row, cursor
+            '''
         ##Check the slopes along the line
         ##use filled DEM and 3*cellsize as spacing; save the 3d feature as one output: out3DProfiles
+        arcpy.CopyFeatures_management(tmpline, "d:\\temp\\tmpline.shp")
         arcpy.InterpolateShape_3d(dem, tmpline, tmpline3D, cellsize*3)
         arcpy.FeatureVerticesToPoints_management(tmpline3D, points, "ALL")
         pntArray = arcpy.da.FeatureClassToNumPyArray(points,["SHAPE@X", "SHAPE@Y", "SHAPE@Z"])
         pntX = np.array([item[0] for item in pntArray])
         pntY = np.array([item[1] for item in pntArray])
         pntZ = np.array([item[2] for item in pntArray])
+        #arcpy.AddMessage(str(len(pntX)))
         #arcpy.AddMessage(pntZ)
 
         maxZ = max(pntZ)
@@ -376,13 +450,6 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM, percentile):
             p , e = optimize.curve_fit(piecewise_linear, x, y)
             #arcpy.AddMessage(p)
             #arcpy.AddMessage(e[0][0])
-            '''
-            ##create the x-y plot with the regression lines
-            xd = np.linspace(minZ, maxZ, 100)
-            #plt.plot(x, y, "o")
-            #plt.plot(xd, piecewise_linear(xd, *p))
-            #plt.show()
-            '''
             if str(e[0][0]) != "inf":
                 ##Use the elevation turning point to determine the threshold
                 turn_Z = p[0]
@@ -412,9 +479,7 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM, percentile):
                 arcpy.Dissolve_management(new_line, tmpline, "", "", "SINGLE_PART")
                 arcpy.Delete_management(new_line)    
         except:
-            #arcpy.AddMessage("Error")
             pass
-        
         ##Get the center points of the tmpline
         arcpy.FeatureVerticesToPoints_management(tmpline, midpoint, "MID")
 
@@ -471,8 +536,7 @@ arcpy.Delete_management("in_memory") ### Empty the in_memory
 if method == "Mainstream exit":
     result_threshold_midpoints = CirqueThresholds (InputCirques, InputDEM)
 else:
-    result_threshold_midpoints, cirqueThresholds = CirqueThresholds_midpoints(InputCirques, InputDEM, 10)
-    #arcpy.CopyFeatures_management(cirqueThresholds, "d:\\temp\\cirquethresholds.shp")
+    result_threshold_midpoints, cirqueThresholds = CirqueThresholds_midpoints(InputCirques, InputDEM)###, 10)
     
 arcpy.CopyFeatures_management(result_threshold_midpoints, OutputCirques)
 
