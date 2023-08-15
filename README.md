@@ -55,13 +55,13 @@ ACME v2 includes two toolsets. The first one is the Step by Step tools, which in
 
 
 # How to download and use this toolbox in ArcGIS or ArcGIS Pro
-The github site includes the revised ACME toolbox (tbx) file and a python folder, including all python source codes associated with these tools. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
+The github site includes the revised ACME toolbox (atbx) file and a python folder, including all python source codes associated with these tools. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
 
 ![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/41865bc2-f44f-4fa9-800d-2bd5f212fe35)
 
-A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with both the tbx file and the python folder and source code files. The user can use this toolbox, check the codes, and comtinue imporving this toolbox. Note that the codes for each tool are imported into the toolbox, so that the toolbox can be run just with the tbx file only. However, the users need to export the codes first to revise the codes. 
+A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with both the atbx file and the python folder and source code files. The user can use this toolbox, check the codes, and comtinue imporving this toolbox. Note that the codes for each tool are not imported into the toolbox yet, so that the toolbox cannot be run just with the tbx file only.  
 
-The toolboxes and tools have been tested in from ArcGIS Pro 2.8 to 3.1. Errors may occur if using other versions of ArcGIS Pro. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. 
+The toolboxes and tools have been tested in from ArcGIS Pro 3.1. Errors may occur if using other versions of ArcGIS Pro. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. 
 
 Please report any errors or questions to Yingkui Li (yli32@utk.edu).
 
