@@ -23,7 +23,8 @@ ACME v2 includes two toolsets. The first one is the Step by Step tools, which in
 
 "Derive Threshold Points from Cirque Outlines" derives cirque threshold focus points based on DEM and cirque polygons (outlines). The inputs include DEM, cirque outlines (polygons), and the method to derive the threshold focus points. This tool provides two methods, mainstream exit and threshold midpoint, to derive cirque threshold focus points. The output is the derived cirque threshold focus points. Make sure that the DEM and cirque outlines have the same projected coordinate system (UTM or other projected systems, not the latitudes and longitudes). The following is the interface of this tool:
 
-![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/9f43d33e-0402-4487-a837-18e17f87910f)
+![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/1dd0d969-6210-4e62-8772-2251ae76faaa)
+
 
 
 
