@@ -255,6 +255,200 @@ def connect_line_sections(line):
     
     return line
 
+def define_circle_center(p1, p2, p3):
+    """
+    Returns the center and radius of the circle passing the given 3 points.
+    In case the 3 points form a line, returns (None, infinity).
+    """
+    temp = p2[0] * p2[0] + p2[1] * p2[1]
+    bc = (p1[0] * p1[0] + p1[1] * p1[1] - temp) / 2
+    cd = (temp - p3[0] * p3[0] - p3[1] * p3[1]) / 2
+    det = (p1[0] - p2[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p2[1])
+    
+    if abs(det) < 1.0e-6:
+        return None
+    
+    # Center of circle
+    cx = (bc*(p2[1] - p3[1]) - cd*(p1[1] - p2[1])) / det
+    cy = ((p1[0] - p2[0]) * cd - (p2[0] - p3[0]) * bc) / det
+    
+    #radius = np.sqrt((cx - p1[0])**2 + (cy - p1[1])**2)
+
+    return (cx, cy)
+
+#------------------------------------------------------------------------------------------------------------
+# This function calculates the plan closure for a cirque. The codes are revised basedd on ACME codes
+# This the revised new codes for the plan closure of the original ACME
+#------------------------------------------------------------------------------------------------------------
+def plan_closSPA(cirqueDEM):
+    #tool to get the plan_closure
+    mid_height = (cirqueDEM.maximum + cirqueDEM.minimum) / 2
+    #arcpy.AddMessage("mid_height is: " + str(mid_height))
+    
+    #Step 2: Get the contourline of the mid-height
+    midHcontour = Contour(cirqueDEM, "in_memory/cont", 10000, mid_height)
+    lineArray = arcpy.da.FeatureClassToNumPyArray("in_memory/cont","SHAPE@LENGTH")
+    if len(lineArray) > 1: ##if more than one contour lines
+        arcpy.AddMessage("multiple contour sections, connect into one!")
+        connect_line_sections("in_memory/cont")
+    
+    lineArray = arcpy.da.FeatureClassToNumPyArray("in_memory/cont","SHAPE@LENGTH")
+    lengthArr = np.array([item[0] for item in lineArray])
+    max_length = np.max(lengthArr)
+    with arcpy.da.UpdateCursor("in_memory/cont", "SHAPE@LENGTH") as cursor:
+        for row in cursor:
+            if row[0] < (max_length-0.1): ##This step reomve the small contour lines
+                arcpy.AddMessage("Delete small contour lines")
+                cursor.deleteRow()
+    del cursor, row
+
+    #Step 3: find the coordinates of first, mid and last points along the mid_height contour
+    ##Get the start and end points of the contour line
+    with arcpy.da.SearchCursor("in_memory/cont", "SHAPE@") as cursor:
+        for row in cursor:
+            #Get start point
+            startpt = row[0].firstPoint
+            x_start = startpt.X
+            y_start = startpt.Y
+
+            #Get end point
+            endpt = row[0].lastPoint
+            x_end = endpt.X
+            y_end = endpt.Y    
+
+    #Get the center point of contourline
+    arcpy.FeatureVerticesToPoints_management("in_memory/cont", "in_memory/mid_point", "MID")
+    pntArray = arcpy.da.FeatureClassToNumPyArray("in_memory\\mid_point",["SHAPE@X", "SHAPE@Y"])
+    pntXArr = np.array([item[0] for item in pntArray])
+    pntYArr = np.array([item[1] for item in pntArray])
+    x_mid = np.mean(pntXArr)
+    y_mid = np.mean(pntYArr)
+    
+    #Step 4: find center point of the three points by circle
+    centre = define_circle_center((x_start, y_start), (x_end, y_end), (x_mid, y_mid))
+    
+    #define end_start and mid_centre segments as polylines
+    array_centre_mid=arcpy.Array([arcpy.Point(x_mid, y_mid),arcpy.Point(centre[0], centre[1])])
+    segment_centre_mid=arcpy.Polyline(array_centre_mid)
+    array_start_end=arcpy.Array([arcpy.Point(x_start, y_start),arcpy.Point(x_end, y_end)])
+    segment_start_end=arcpy.Polyline(array_start_end)
+
+    #Step 5: Find the angle of the start point, centre point and the end point
+    Angle = getAngle((x_start, y_start), centre , (x_end, y_end))
+    #arcpy.AddMessage(str(Angle))
+    #verify whether the mid_centre segment intersect end_start segment
+    if (segment_centre_mid.crosses(segment_start_end)==False):
+        #calculate 360 degrees - the angle between centre, start and end points
+        #Angle = ((2*math.pi - (math.acos(((math.pow(dist_centre_end,2)+math.pow(dist_centre_start,2)-math.pow(dist_start_end,2))/(2*dist_centre_end*dist_centre_start)))))*180/math.pi)
+        if Angle < 180:
+            Angle = 360 - Angle
+    else:
+        #calculate the angle between centre, start and end points
+        #Angle = (((math.acos(((math.pow(dist_centre_end,2)+math.pow(dist_centre_start,2)-math.pow(dist_start_end,2))/(2*dist_centre_end*dist_centre_start)))))*180/math.pi)
+        if Angle > 180:
+            Angle = 360 - Angle
+                
+    ##delete the temp dataset
+    arcpy.Delete_management ("in_memory/cont")
+    arcpy.Delete_management ("in_memory/mid_point")
+
+    return Angle   
+
+'''
+##old codes from ACME
+def plan_closSPA(cirqueDEM):
+    #tool to get the plan_closure
+    meanH = int(cirqueDEM.mean)
+    ##print meanH
+    mid_height=(meanH)
+    midHcontour = Contour(cirqueDEM, "in_memory/cont", 10000, mid_height)
+    geometry = arcpy.CopyFeatures_management(midHcontour, arcpy.Geometry())
+    #get total length of geometry to select only the longest contour if at that elevation there are more than one line
+    lenghtlist=[]
+    for x in geometry:
+        #arcpy.AddMessage("length is:" + str(x.length))
+        if x.length > 100: ##contour needs to > 100 m
+            lenghtlist.append(x.length)
+    if len(lenghtlist) > 0:
+        maxlength=max(lenghtlist)
+        index=lenghtlist.index(maxlength)
+        goodgeometry=geometry[index]
+        maximum=int(geometry[index].length)
+        #find the coordinates of first, mid and last points along the mid_height contour
+        point_coord_list=[]
+        for m in range(0, maximum+1, int(maximum/2)):
+            points = goodgeometry.positionAlongLine (m)
+            centroid = points.centroid
+            point_coord_list.append(centroid.X)
+            point_coord_list.append(centroid.Y)
+        #define the coordinates
+        x_start,y_start=point_coord_list[0],point_coord_list[1]
+        x_end,y_end=point_coord_list[4],point_coord_list[5]
+        x_mid,y_mid=point_coord_list[2],point_coord_list[3]
+
+        #to avoid dividing by 0 in the next section, i.e. when getting s1 and s2, x_mid and x_end and x1 cannot have the same value
+        if x_end==x_start:
+            x_end+=0.00001
+        elif x_mid==x_end:
+            x_end+=0.00001
+        else:
+            pass
+
+    
+        #end_start and mid_end lines midpoints coordinates
+
+        m1x,m1y= (x_end+x_start)/2, (y_end+y_start)/2
+        m2x,m2y= (x_mid+x_end)/2, (y_mid+y_end)/2
+
+        # slope of the end_start and mid_end lines
+        s1=(y_end-y_start)/(x_end-x_start)
+        if s1 == 0:
+            s1 = 0.00001
+        ##print s1
+        s2=(y_mid-y_end)/(x_mid-x_end)
+        ##print s2
+        if s2 == 0:
+            s2 = 0.00001
+
+        #inverse slope
+        is1=-1*(1/s1)
+        is2=-1*(1/s2)
+
+        #equations that enable to define the point of intersection between the two lines passing by the midpoints and perpendicular to the end_start and mid_end segments
+        a=np.array([[-is1,1],[-is2,1]])
+        b=np.array([(-m1x*is1+m1y),(-m2x*is2+m2y)])
+        try:
+            centre=np.linalg.solve(a,b)
+        except:
+            arcpy.AddMessage("three points are probably colinear")
+            #print "three points are probably colinear"
+            return 0
+
+        #measure distances between key points
+        dist_centre_start = math.sqrt((math.pow((x_start-centre[0]),2))+(math.pow((y_start-centre[1]),2)))
+        dist_centre_end = math.sqrt((math.pow((x_end-centre[0]),2))+(math.pow((y_end-centre[1]),2)))
+        dist_centre_mid = math.sqrt((math.pow((x_mid-centre[0]),2))+(math.pow((y_mid-centre[1]),2)))
+        dist_start_end = math.sqrt((math.pow((x_start-x_end),2))+(math.pow((y_start-y_end),2)))
+        #define end_start and mid_centre segments as polylines
+        array_centre_mid=arcpy.Array([arcpy.Point(x_mid, y_mid),arcpy.Point(centre[0], centre[1])])
+        segment_centre_mid=arcpy.Polyline(array_centre_mid)
+        array_start_end=arcpy.Array([arcpy.Point(x_start, y_start),arcpy.Point(x_end, y_end)])
+        segment_start_end=arcpy.Polyline(array_start_end)
+        #verify whether the mid_centre segment intersect end_start segment
+        if segment_centre_mid.crosses(segment_start_end)==False:
+            #calculate 360 degrees - the angle between centre, start and end points
+            Angle = ((2*math.pi - (math.acos(((math.pow(dist_centre_end,2)+math.pow(dist_centre_start,2)-math.pow(dist_start_end,2))/(2*dist_centre_end*dist_centre_start)))))*180/math.pi)
+        else:
+            #calculate the angle between centre, start and end points
+            Angle = (((math.acos(((math.pow(dist_centre_end,2)+math.pow(dist_centre_start,2)-math.pow(dist_start_end,2))/(2*dist_centre_end*dist_centre_start)))))*180/math.pi)
+    else:
+        Angle = 0
+
+    ##delete the temp dataset
+    arcpy.Delete_management ("in_memory/cont")
+
+    return Angle
+'''
 
 #------------------------------------------------------------------------------------------------------------
 # This function calculates the plan closure for a cirque based on the midAlt contours. The plan closure is determined as the
@@ -524,7 +718,7 @@ for field in new_fields:
     else:
         arcpy.AddField_management(cirques_copy, field, "DOUBLE",10, 3)
 
-new_fields = ("Plan_clos", "Prof_clos") ##All float variables count = 2
+new_fields = ("Plan_closSPA", "Plan_closISE", "Prof_clos") ##All float variables count = 3
 for field in new_fields:
     if field in Fieldlist:
         pass
@@ -791,7 +985,7 @@ midAltContur = arcpy.CreateFeatureclass_management("in_memory", "midAltContur", 
 #FcID = arcpy.Describe(cirques_copy).OIDFieldName
 FcID = "ID_cirque"
 
-fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_clos", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33")
+fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_closISE", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33", "Plan_closSPA", "A2D")
 volumetable = arcpy.env.scratchFolder + "\\volumetable.txt"
 contur = arcpy.env.scratchGDB + "\\contur"
 #startline = arcpy.env.scratchGDB + "\\startline"
@@ -870,10 +1064,14 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
 
         result = plan_closISE(cirqueDTM, contur) ####, startline, endline)
 
-        planclos = result[0] ##planclos
+        planclosISE = result[0] ##planclos
 
-        row[8]= planclos
+        row[8]= planclosISE
         arcpy.Append_management(contur, midAltContur, "NO_TEST")
+
+        ##Plan_closSPA
+        angle = plan_closSPA(cirqueDTM)
+        row[23]= angle
         
         #calculate 3D surface
         ##Step 1: Conduct Suface Volume analysis to generate the surface volume table, volumetable
