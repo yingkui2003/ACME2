@@ -68,7 +68,7 @@ The toolboxes and tools have been tested in from ArcGIS Pro 3.1. Errors may occu
 Please report any errors or questions to Yingkui Li (yli32@utk.edu).
 
 # Cite this work
-Li et al., in preparation. TBD
+Li et al., ACME2: An Extended Toolbox for Automated Cirque Metrics Extraction (in preparation). 
 
 # Contact info
 Yingkui Li
