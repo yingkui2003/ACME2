@@ -57,7 +57,8 @@ ACME2 includes two toolsets. The first one is the Step by Step tools, which incl
 # How to download and use this toolbox in ArcGIS or ArcGIS Pro
 The github site includes the revised ACME toolbox (atbx) file and a python folder, including all python source codes associated with these tools. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
 
-![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/1f50db4d-0e32-4cec-ba3c-feba74e8f609)
+![image](https://github.com/yingkui2003/ACME2/assets/24683137/9447d858-e4ca-4460-b00b-53a173717eff)
+
 
 
 A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with both the atbx file and the python folder and source code files. The user can use this toolbox, check the codes, and comtinue imporving this toolbox. Note that the codes for each tool are not imported into the toolbox yet, so that the toolbox cannot be run just with the tbx file only.  
