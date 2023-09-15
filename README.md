@@ -33,7 +33,7 @@ ACME2 includes two toolsets. The first one is the Step by Step tools, which incl
 ![image](https://github.com/yingkui2003/ACME2/assets/24683137/f6428849-7b8b-4789-831c-9a4eee636480)
 
 
-"Derive Axis-related Metrics" derives the axis-related cirque metrics, including Axprofclos, Axhli, Axasp, Axgrad and Axamp, and the axis-related curve-fitting parameters, including L_Exp_A, L_Exp_B, L_Exp_R2, L_Kcurv_C, L_Kcurv_R2, W_Quad_C, and W_Quad_R2., This tool includes two inputs: Input Cirque Outlines and Input DEM. The derived metrics are directly saved to the attribute table of the input cirque outlines. 
+"Derive Axis-related Metrics" derives the axis-related cirque metrics, including Axprofclos, Axhli, Axasp, Axgrad and Axamp, and the axis-related curve-fitting parameters, including L_Exp_A, L_Exp_B, L_Exp_R2, L_Kcurv_C, L_Kcurv_R2, W_Quad_C, and W_Quad_R2., This tool includes four inputs: Input Cirque Outlines, Input DEM, Input Length Features and Input Width Features. The derived metrics are directly saved to the attribute table of the input cirque outlines. 
 
 ![image](https://github.com/yingkui2003/ACME-v2/assets/24683137/f50b9b87-7b81-4400-b4d7-4a05fe20d53f)
 
