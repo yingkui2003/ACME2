@@ -424,7 +424,7 @@ def CirqueThresholdsFcc (cirquepolys, facc, dem, no_overlap = 1):
 
         return cirquePoints
 
-def CirqueThresholds_midpoints(InputCirques, InputDEM): ###
+def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
     ##This method determines the cirque threshold mid-points by the lower 10th percentile of the elevation of the cirque outlines
     sel_poly = "in_memory\\sel_poly"
     cirque_line = "in_memory\\cirque_line"
@@ -472,20 +472,27 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM): ###
 
         midElev = (np.max(Elevs) + np.min(Elevs)) / 2
         lowhalfElevs = Elevs[Elevs < midElev]
-        #binvalue = int((maxElev - minElev) /5)
-        prob, ele, _ = plt.hist(lowhalfElevs, bins = 20, cumulative = False)
+        #binvalue = int((midElev -np.min(Elevs)) /20)
+        #binvalue = max(5, binvalue) ##set the min bin value as 5 m
+        bins_num = int(midElev -np.min(Elevs)/5)
+        prob, ele, _ = plt.hist(lowhalfElevs, bins = bins_num, cumulative = False)
+        #arcpy.AddMessage(str(binvalue))
+        #arcpy.AddMessage(ele)
         #plt.show()
         peak_prob_elev = ele[np.where(prob == prob.max())][0]
         #arcpy.AddMessage("peak_prob_elev from histogram is: " + str(peak_prob_elev) )
         ##Find the lowest prob elev above the peak_prob_elev
-        elev_above = ele[ele > peak_prob_elev]
-        prob_above = prob[ele[1:] > peak_prob_elev]
-        low_prob_elev = elev_above[np.where(prob_above == prob_above.min())][0]
-        if (low_prob_elev - peak_prob_elev) < 10:
-            low_prob_elev += 10
+        #elev_above = ele[ele > peak_prob_elev]
+        #prob_above = prob[ele[1:] > peak_prob_elev]
+        #low_prob_elev = elev_above[np.where(prob_above == prob_above.min())][0]
+        #if (low_prob_elev - peak_prob_elev) < 10:
+        #    low_prob_elev += 10
         #arcpy.AddMessage("low_prob_elev from histogram is: " + str(low_prob_elev) )
 
-        cutoff_elev = (low_prob_elev + peak_prob_elev)/2 ##Use the center of the peak and low_prob elevation as the cutoff
+        cutoff_elev = peak_prob_elev + 2 * 5 ##add one more bin elevation (5 meter) to the peak elevation to include all potential cirque threshold
+        #cutoff_elev = peak_prob_elev + 1.5 * binvalue ##add a half bin value to the peak elevation
+        #cutoff_elev = low_prob_elev ##Use the center of the peak and low_prob elevation as the cutoff
+        #cutoff_elev = (low_prob_elev + peak_prob_elev)/2 ##Use the center of the peak and low_prob elevation as the cutoff
         
         #cutoff_elev = peak_prob_elev + (midElev - peak_prob_elev)/3 ##add 1/3 elevation between the midelev and peak prob elevation, so that it can cover both threshold and valley sides 
 
@@ -493,6 +500,19 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM): ###
         #arcpy.AddMessage("Cutoff Elevation from outline: " + str(cutoff_elev))
 
         ##Method 1: use the raster functions to get the cirque outlines within the lower elevations
+        '''
+        ##A) get the outline cut in half 
+        outCon = Con(cirqueDTM < midElev, 1)
+        OutBndCln = BoundaryClean(outCon)
+        arcpy.conversion.RasterToPolygon(OutBndCln, "in_memory\\OutBndCln_poly")
+        arcpy.analysis.Clip(cirque_line, "in_memory\\OutBndCln_poly", tmpline)
+        arcpy.MultipartToSinglepart_management(tmpline, "in_memory\\tmpline_singlePart")
+        arcpy.Dissolve_management("in_memory\\tmpline_singlePart", tmpline, "", "", "SINGLE_PART")
+
+        arcpy.CopyFeatures_management(tmpline, "d:\\temp\\halfline.shp")
+
+        '''
+        
         outCon = Con(cirqueDTM < cutoff_elev, 1)
         OutBndCln = BoundaryClean(outCon)
         arcpy.conversion.RasterToPolygon(OutBndCln, "in_memory\\OutBndCln_poly")
@@ -521,7 +541,9 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM): ###
             '''
         ##Check the slopes along the line
         ##use filled DEM and 3*cellsize as spacing; save the 3d feature as one output: out3DProfiles
-        arcpy.CopyFeatures_management(tmpline, "d:\\temp\\tmpline.shp")
+        '''
+        arcpy.CopyFeatures_management(tmpline, "d:\\temp\\thresholdline.shp")
+        
         arcpy.InterpolateShape_3d(dem, tmpline, tmpline3D, cellsize*3)
         arcpy.FeatureVerticesToPoints_management(tmpline3D, points, "ALL")
         pntArray = arcpy.da.FeatureClassToNumPyArray(points,["SHAPE@X", "SHAPE@Y", "SHAPE@Z"])
@@ -585,6 +607,7 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM): ###
                 arcpy.Delete_management(new_line)    
         except:
             pass
+        '''
         ##Get the center points of the tmpline
         arcpy.FeatureVerticesToPoints_management(tmpline, midpoint, "MID")
 
@@ -608,6 +631,9 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM): ###
         ##Append the single point to 
         arcpy.Append_management(midpoint, cirquePoints, "NO_TEST") 
         arcpy.Append_management(tmpline, cirqueThresholds, "NO_TEST") 
+
+        #arcpy.CopyFeatures_management(tmpline, "d:\\temp\\tmpline2.shp")
+
         i += 1
         
     ##delete the temp dataset
