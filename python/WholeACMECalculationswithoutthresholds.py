@@ -475,7 +475,8 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         #binvalue = int((midElev -np.min(Elevs)) /20)
         #binvalue = max(5, binvalue) ##set the min bin value as 5 m
         bins_num = int(midElev -np.min(Elevs)/5)
-        prob, ele, _ = plt.hist(lowhalfElevs, bins = bins_num, cumulative = False)
+        prob, ele = np.histogram(lowhalfElevs, bins = bins_num)
+        #prob, ele, _ = plt.hist(lowhalfElevs, bins = bins_num, cumulative = False)
         #arcpy.AddMessage(str(binvalue))
         #arcpy.AddMessage(ele)
         #plt.show()
@@ -1407,7 +1408,7 @@ arcpy.Delete_management("in_memory") ### Empty the in_memory
 
 ##Step 3: derive Location variables
 arcpy.AddMessage("Step 3: Deriving Location variables: Lat, Long, Northing (km) and Easting (km)")
-
+'''
 new_fields = ("M_East","M_North")
 ##Get the easting and northing
 for field in new_fields:
@@ -1446,6 +1447,90 @@ arcpy.DeleteField_management(cirques_copy,["M_East", "M_North"])
 
 sr = arcpy.SpatialReference(4326) ##WGS 84
 arcpy.management.CalculateGeometryAttributes(cirques_copy, [["Lon", "INSIDE_X"],["Lat", "INSIDE_Y"]], "", "", sr, "DD")
+'''
+
+spatial_ref = arcpy.Describe(cirques_copy).spatialReference
+#arcpy.AddMessage(spatial_ref.name)
+#arcpy.AddMessage(spatial_ref.XYResolution)
+if "GCS" in spatial_ref.name:
+    ##Need to convert the map projection to a UTM or similar
+    arcpy.AddMessage("The projection is GCS. Need to reproject the file to a UTM or other projected coordinate system")
+    exit()
+
+##Obtain the cellsize of the DEM
+dem = arcpy.Raster(InputDEM)
+cellsize = dem.meanCellWidth
+#arcpy.AddMessage("Cell size: " + str(cellsize))
+
+if ArcGISPro:
+    new_fields = ("M_East","M_North")
+    ##Get the easting and northing
+    for field in new_fields:
+        if field in Fieldlist:
+            pass
+        else:
+            arcpy.AddField_management(cirques_copy, field, "DOUBLE",10, 4)
+
+    arcpy.management.CalculateGeometryAttributes(cirques_copy, [["M_East", "INSIDE_X"],["M_North", "INSIDE_Y"]])
+
+    fields = ("M_East", "Easting", "M_North", "Northing", "Projection", "DEM_RES", "Method")
+    with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
+        for row in cursor:
+           row[1] = row[0]/1000 ##Convert to km
+           row[3] = row[2]/1000 ##Convert to km
+           row[4] = spatial_ref.name
+           row[5] = cellsize
+           row[6] = method
+           cursor.updateRow(row)
+    del row, cursor
+    arcpy.DeleteField_management(cirques_copy,["M_East", "M_North"])
+
+else: #For ArcGIS 10
+    arcpy.AddGeometryAttributes_management(cirques_copy, "CENTROID_INSIDE")
+    fields = ("INSIDE_X", "Easting", "INSIDE_Y", "Northing", "Projection", "DEM_RES", "Method")
+    with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
+        for row in cursor:
+           row[1] = row[0]/1000 ##Convert to km
+           row[3] = row[2]/1000 ##Convert to km
+           row[4] = spatial_ref.name
+           row[5] = cellsize
+           row[6] = method
+           cursor.updateRow(row)
+    del row, cursor
+    arcpy.DeleteField_management(cirques_copy,["INSIDE_X", "INSIDE_Y"])
+
+##get the lat and long
+#wkt = "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],\
+#              PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]];\
+#              -400 -400 1000000000;-100000 10000;-100000 10000;8.98315284119522E-09;\
+#              0.001;0.001;IsHighPrecision"
+#sr = arcpy.SpatialReference(text=wkt)
+
+sr = arcpy.SpatialReference(4326) ##WGS 84
+if ArcGISPro:
+    arcpy.management.CalculateGeometryAttributes(cirques_copy, [["Lon", "INSIDE_X"],["Lat", "INSIDE_Y"]], "", "", sr, "DD")
+else: ##For ArcGIS 10
+    arcpy.AddGeometryAttributes_management(cirques_copy, "CENTROID_INSIDE", "", "", sr)
+    fields = ("INSIDE_X", "Lon", "INSIDE_Y", "Lat")
+    with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
+        for row in cursor:
+           row[1] = row[0]
+           row[3] = row[2]
+           cursor.updateRow(row)
+    del row, cursor
+    arcpy.DeleteField_management(cirques_copy,["INSIDE_X", "INSIDE_Y"])
+
+
+    Field_list = []
+    List_Fields = arcpy.ListFields(cirques_copy)
+    for x in List_Fields:
+        Field_list.append(x.baseName)
+
+    ##Delete other inside variables created
+    if "INSIDE_Z" in Field_list:
+        arcpy.DeleteField_management(cirques_copy,["INSIDE_Z"])
+    if "INSIDE_M" in Field_list:
+        arcpy.DeleteField_management(cirques_copy,["INSIDE_M"])
 
 ##Step 4: derive 
 arcpy.AddMessage("Step 4: Deriving Perimeter, Area_2D, and Circularity")
@@ -2111,6 +2196,7 @@ arcpy.CopyFeatures_management(cirques_copy, outputCirques)
 arcpy.Delete_management(cirques_copy) 
 
 arcpy.Delete_management("in_memory") ### Empty the in_memory
+
 
 
 

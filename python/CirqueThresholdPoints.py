@@ -363,29 +363,19 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         ExtractValuesToPoints(points, dem, points_with_Z, "INTERPOLATE", "VALUE_ONLY")
         pntArray = arcpy.da.FeatureClassToNumPyArray(points_with_Z,["RASTERVALU"])
         Elevs = np.array([item[0] for item in pntArray])
+
         #arcpy.AddMessage(Elevs)
 
         midElev = (np.max(Elevs) + np.min(Elevs)) / 2
         lowhalfElevs = Elevs[Elevs < midElev]
         #binvalue = int((maxElev - minElev) /5)
-        prob, ele, _ = plt.hist(lowhalfElevs, bins = 20, cumulative = False)
-        #plt.show()
+        #arcpy.AddMessage(lowhalfElevs)
+        bins_num = int(midElev -np.min(Elevs)/5)
+
+        prob, ele = np.histogram(lowhalfElevs, bins = bins_num)
         peak_prob_elev = ele[np.where(prob == prob.max())][0]
-        #arcpy.AddMessage("peak_prob_elev from histogram is: " + str(peak_prob_elev) )
-        ##Find the lowest prob elev above the peak_prob_elev
-        elev_above = ele[ele > peak_prob_elev]
-        prob_above = prob[ele[1:] > peak_prob_elev]
-        low_prob_elev = elev_above[np.where(prob_above == prob_above.min())][0]
-        if (low_prob_elev - peak_prob_elev) < 10:
-            low_prob_elev += 10
-        #arcpy.AddMessage("low_prob_elev from histogram is: " + str(low_prob_elev) )
 
-        cutoff_elev = (low_prob_elev + peak_prob_elev)/2 ##Use the center of the peak and low_prob elevation as the cutoff
-        
-        #cutoff_elev = peak_prob_elev + (midElev - peak_prob_elev)/3 ##add 1/3 elevation between the midelev and peak prob elevation, so that it can cover both threshold and valley sides 
-
-        #cutoff_elev = np.percentile(Elevs, percentile) ##get the 10th percentile elevation
-        #arcpy.AddMessage("Cutoff Elevation from outline: " + str(cutoff_elev))
+        cutoff_elev = peak_prob_elev + 2 * 5 ##add one more bin elevation (5 meter) to the peak elevation to include all potential cirque threshold
 
         ##Method 1: use the raster functions to get the cirque outlines within the lower elevations
         outCon = Con(cirqueDTM < cutoff_elev, 1)
@@ -541,5 +531,7 @@ else:
 arcpy.CopyFeatures_management(result_threshold_midpoints, OutputCirques)
 
 arcpy.Delete_management("in_memory") ### Empty the in_memory
+
+
 
 
