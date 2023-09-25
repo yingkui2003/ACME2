@@ -13,7 +13,7 @@ in determining the hypsometric max and HI values, which is faster and not affect
 
 (5) ACME2 also improves the logic of the codes and fixed the memory allocation issue when processing a large amount of cirques.
 
-Due to the end of support of ESRI for ArcGIS 10, ACME2 is for ArcGIS Pro 2.8 or newer only. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. Please contact the developer if you need to run the tools in ArcGIS 10 for more instructions.
+Three toolbox files are provided. ACME2_for_ArcMap.tbx is for ArCGIS 10.7 and 10.8. It can also be run in ArcGIS Pro. ACME2.tbx is for ArcGIS Pro 2.8 or newer. ACME2.atbx is for ArcGIS 3.0 or newer. 
 
 # Major tools within the toolbox
 ACME2 includes two toolsets. The first one is the Step by Step tools, which include 4 tools: 0. Derive Thresholds from Cirque Outlines, 1. Record Datasets and Derive Location, Size, Shape, Slope, Aspect, and Altitude Metrics, 2. Derive Axis-related Metrics, and 3. Derive Catchment Metrics. The second toolset is for the Whole Process, including two tools: Whole Calculations with Auto-derived Thresholds and Whole Calculations With Specified Thresholds.
@@ -61,9 +61,9 @@ The github site includes the revised ACME toolbox (atbx) file and a python folde
 
 
 
-A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with both the atbx file and the python folder and source code files. The user can use this toolbox, check the codes, and comtinue imporving this toolbox. Note that the codes for each tool are not imported into the toolbox yet, so that the toolbox cannot be run just with the tbx file only.  
+A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with the three tbx and atbx files, the python folder with source code files, and a TestData folder for the test datasets. The user can use the toolboxes, check the codes, and comtinue imporving this tools. Note that the codes for each tool are not imported into the atbx toolbox yet, so that the atbx toolbox cannot be run just with the tbx file only. The two tbx toolboxes are imported with the codes; thus, they can be used without the code files.  
 
-The toolboxes and tools have been tested in from ArcGIS Pro 3.1. Errors may occur if using other versions of ArcGIS Pro. The python codes related to the tools can be run in ArcGIS 10, but the toolbox interface is newer than ArcGIS 10, so that it can not open in ArcGIS 10. Addition work is needed to recreate the tool interface in ArcGIS 10. 
+The toolboxes and tools have been tested in from ArcGIS 10.7, 10.8, ArcGIS Pro 2.8 to 3.1. Errors may occur if using other versions of ArcGIS 10 or ArcGIS Pro.  
 
 Please report any errors or questions to Yingkui Li (yli32@utk.edu).
 
