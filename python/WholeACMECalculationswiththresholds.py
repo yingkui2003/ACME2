@@ -1542,7 +1542,7 @@ countResult = arcpy.GetCount_management(cirque_lines)
 count = int(countResult.getOutput(0))
 #FcID = arcpy.Describe(cirque_lines).OIDFieldName
 #FcID = arcpy.Describe(inputFCcopy).OIDFieldName
-FcID = "ORIG_FID"
+FcID = "ID_cirque"
 
 linearr = arcpy.da.FeatureClassToNumPyArray(cirque_lines, FcID)
 id_list = np.array([item[0] for item in linearr])
