@@ -1180,15 +1180,15 @@ if "Projection" in Fieldlist:
 else:
     arcpy.AddField_management(cirques_copy, "Projection", 'Text')
 
-if "DEM_RES" in Fieldlist:
+if "DEMresolution" in Fieldlist:
     pass
 else:
-    arcpy.AddField_management(cirques_copy, "DEM_RES", "DOUBLE")
+    arcpy.AddField_management(cirques_copy, "DEMresolution", "DOUBLE")
 
-if "Method" in Fieldlist:
+if "FocusMethod" in Fieldlist:
     pass
 else:
-    arcpy.AddField_management(cirques_copy, "Method", 'Text')
+    arcpy.AddField_management(cirques_copy, "FocusMethod", 'Text')
     
 ##location variables
 new_fields = ("Lon","Lat","Easting","Northing") ##All double variables count = 4
@@ -1426,7 +1426,7 @@ if "GCS" in spatial_ref.name:
     exit()
 arcpy.management.CalculateGeometryAttributes(cirques_copy, [["M_East", "INSIDE_X"],["M_North", "INSIDE_Y"]])
 
-fields = ("M_East", "Easting", "M_North", "Northing", "Projection", "DEM_RES", "Method")
+fields = ("M_East", "Easting", "M_North", "Northing", "Projection", "DEMresolution", "FocusMethod")
 with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
     for row in cursor:
        row[1] = row[0]/1000 ##Convert to km
@@ -1473,7 +1473,7 @@ if ArcGISPro:
 
     arcpy.management.CalculateGeometryAttributes(cirques_copy, [["M_East", "INSIDE_X"],["M_North", "INSIDE_Y"]])
 
-    fields = ("M_East", "Easting", "M_North", "Northing", "Projection", "DEM_RES", "Method")
+    fields = ("M_East", "Easting", "M_North", "Northing", "Projection", "DEMresolution", "FocusMethod")
     with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         for row in cursor:
            row[1] = row[0]/1000 ##Convert to km
@@ -1487,7 +1487,7 @@ if ArcGISPro:
 
 else: #For ArcGIS 10
     arcpy.AddGeometryAttributes_management(cirques_copy, "CENTROID_INSIDE")
-    fields = ("INSIDE_X", "Easting", "INSIDE_Y", "Northing", "Projection", "DEM_RES", "Method")
+    fields = ("INSIDE_X", "Easting", "INSIDE_Y", "Northing", "Projection", "DEMresolution", "FocusMethod")
     with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         for row in cursor:
            row[1] = row[0]/1000 ##Convert to km
