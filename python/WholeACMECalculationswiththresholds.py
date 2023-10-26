@@ -1576,6 +1576,11 @@ for fid in id_list:
         outWs1 = Watershed(fdir, outPour)
         outWs = Con(outWs1 >= 0, 1)  
         arcpy.RasterToPolygon_conversion(outWs, SingleWs, "NO_SIMPLIFY", "VALUE")
+
+        ##Append the cirque polygon to the singleWS to prevent very small ws created: Added by Yingkui Li 10/26/2023
+        arcpy.Select_analysis(cirques_copy, "in_memory\\Selcirque", query)
+        arcpy.Append_management("in_memory\\Selcirque", SingleWs, "NO_TEST")
+         
         arcpy.Dissolve_management(SingleWs, "in_memory\\dissolve_SingleWs")
         arcpy.AddField_management("in_memory\\dissolve_SingleWs", "ID_cirque", "INTEGER", 6)
         with arcpy.da.UpdateCursor("in_memory\\dissolve_SingleWs", "ID_cirque") as cursor:

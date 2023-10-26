@@ -196,6 +196,11 @@ for fid in id_list:
         outWs1 = Watershed(fdir, outPour)
         outWs = Con(outWs1 >= 0, 1)  
         arcpy.RasterToPolygon_conversion(outWs, SingleWs, "NO_SIMPLIFY", "VALUE")
+        
+        ##Append the cirque polygon to the singleWS to prevent very small ws created: Added by Yingkui Li 10/26/2023
+        arcpy.Select_analysis(InputCirques, "in_memory\\Selcirque", query)
+        arcpy.Append_management("in_memory\\Selcirque", SingleWs, "NO_TEST")
+        
         arcpy.Dissolve_management(SingleWs, "in_memory\\dissolve_SingleWs")
         arcpy.AddField_management("in_memory\\dissolve_SingleWs", "ID_cirque", "INTEGER", 6)
         with arcpy.da.UpdateCursor("in_memory\\dissolve_SingleWs", "ID_cirque") as cursor:
@@ -203,8 +208,10 @@ for fid in id_list:
                row[0]=fid
                cursor.updateRow(row)
         del row, cursor
-        arcpy.Append_management("in_memory\\dissolve_SingleWs", TotalWS, "NO_TEST")        
 
+    
+        
+        arcpy.Append_management("in_memory\\dissolve_SingleWs", TotalWS, "NO_TEST")        
     
 
 #arcpy.CopyFeatures_management(cirque_thresholds, OutputThresholds)
@@ -234,15 +241,18 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
         query = "ID_cirque = "+ str(row[6])
         #arcpy.AddMessage(query)
         arcpy.Select_analysis(TotalWS, selWs, query)
+        arcpy.CopyFeatures_management(selWs, "d:\\temp\\selws.shp")
         
         arr = arcpy.da.FeatureClassToNumPyArray(selWs, "SHAPE@AREA")
         areas = np.array([item[0] for item in arr])
-        #arcpy.AddMessage(str(len(areas)))
+        #arcpy.AddMessage(areas)
         area = max(areas) ##only choose the maximum area
         #arcpy.AddMessage(str(area))
         WsDTM = ExtractByMask(InputDEM, selWs) ##shape@
         #WsDTM_max = arcpy.GetRasterProperties_management(WsDTM, "MAXIMUM")
         #maxabalt = int(float(WsDTM_max.getOutput(0)))
+        #arcpy.AddMessage(str(maxabalt))
+
         maxabalt = int(float(WsDTM.maximum))
         if maxabalt < row[2]: ##in case the maxabalt is smaller than the Z_max from the cirque outline
             row[4] = row[2]
