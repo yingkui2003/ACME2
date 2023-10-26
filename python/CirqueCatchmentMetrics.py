@@ -241,7 +241,7 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
         query = "ID_cirque = "+ str(row[6])
         #arcpy.AddMessage(query)
         arcpy.Select_analysis(TotalWS, selWs, query)
-        arcpy.CopyFeatures_management(selWs, "d:\\temp\\selws.shp")
+        #arcpy.CopyFeatures_management(selWs, "d:\\temp\\selws.shp")
         
         arr = arcpy.da.FeatureClassToNumPyArray(selWs, "SHAPE@AREA")
         areas = np.array([item[0] for item in arr])
