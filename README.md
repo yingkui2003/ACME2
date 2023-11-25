@@ -68,7 +68,7 @@ The toolboxes and tools have been tested in from ArcGIS 10.7, 10.8, ArcGIS Pro 2
 Please report any errors or questions to Yingkui Li (yli32@utk.edu).
 
 # Cite this work
-Li, Y., Evans, I.S., Spagnolo, M., Pellitero, R., Barr, I.D., Ely, J.C. 2023. ACME2: An Extended Toolbox for Automated Cirque Metrics Extraction. Geomorphology 108982. https://doi.org/10.1016/j.geomorph.2023.108982.   
+Li, Y., Evans, I.S., Spagnolo, M., Pellitero, R., Barr, I.D., Ely, J.C. 2024. ACME2: An Extended Toolbox for Automated Cirque Metrics Extraction. Geomorphology 445, 108982. https://doi.org/10.1016/j.geomorph.2023.108982.   
 
 # Contact info
 Yingkui Li
