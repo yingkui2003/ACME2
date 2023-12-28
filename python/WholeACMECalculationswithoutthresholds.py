@@ -523,6 +523,15 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         
         ##test if there are more line sections
         lineArray = arcpy.da.FeatureClassToNumPyArray(tmpline,["SHAPE@LENGTH"])
+        if len(lineArray) == 0: ##if no line is created
+            cutoff_elev = np.percentile(Elevs, 25) 
+            outCon = Con(cirqueDTM < cutoff_elev, 1)
+            OutBndCln = BoundaryClean(outCon)
+            arcpy.conversion.RasterToPolygon(OutBndCln, "in_memory\\OutBndCln_poly")
+            arcpy.analysis.Clip(cirque_line, "in_memory\\OutBndCln_poly", tmpline)
+            arcpy.MultipartToSinglepart_management(tmpline, "in_memory\\tmpline_singlePart")
+            arcpy.Dissolve_management("in_memory\\tmpline_singlePart", tmpline, "", "", "SINGLE_PART")
+            
         if len(lineArray) > 1:
             #arcpy.AddMessage("multiple lines created, need to connect the lines")
             ##only connected major lines

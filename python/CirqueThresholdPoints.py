@@ -364,13 +364,11 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         pntArray = arcpy.da.FeatureClassToNumPyArray(points_with_Z,["RASTERVALU"])
         Elevs = np.array([item[0] for item in pntArray])
 
-        #arcpy.AddMessage(Elevs)
-
         midElev = (np.max(Elevs) + np.min(Elevs)) / 2
         lowhalfElevs = Elevs[Elevs < midElev]
         #binvalue = int((maxElev - minElev) /5)
         #arcpy.AddMessage(lowhalfElevs)
-        bins_num = int(midElev -np.min(Elevs)/5)
+        bins_num = int((midElev -np.min(Elevs))/5)
 
         prob, ele = np.histogram(lowhalfElevs, bins = bins_num)
         peak_prob_elev = ele[np.where(prob == prob.max())][0]
@@ -387,6 +385,15 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         
         ##test if there are more line sections
         lineArray = arcpy.da.FeatureClassToNumPyArray(tmpline,["SHAPE@LENGTH"])
+        if len(lineArray) == 0: ##if no line is created
+            cutoff_elev = np.percentile(Elevs, 25) 
+            outCon = Con(cirqueDTM < cutoff_elev, 1)
+            OutBndCln = BoundaryClean(outCon)
+            arcpy.conversion.RasterToPolygon(OutBndCln, "in_memory\\OutBndCln_poly")
+            arcpy.analysis.Clip(cirque_line, "in_memory\\OutBndCln_poly", tmpline)
+            arcpy.MultipartToSinglepart_management(tmpline, "in_memory\\tmpline_singlePart")
+            arcpy.Dissolve_management("in_memory\\tmpline_singlePart", tmpline, "", "", "SINGLE_PART")
+            
         if len(lineArray) > 1:
             #arcpy.AddMessage("multiple lines created, need to connect the lines")
             ##only connected major lines
@@ -407,6 +414,8 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         ##Check the slopes along the line
         ##use filled DEM and 3*cellsize as spacing; save the 3d feature as one output: out3DProfiles
         #arcpy.CopyFeatures_management(tmpline, "d:\\temp\\tmpline.shp")
+        
+        '''       
         arcpy.InterpolateShape_3d(dem, tmpline, tmpline3D, cellsize*3)
         arcpy.FeatureVerticesToPoints_management(tmpline3D, points, "ALL")
         pntArray = arcpy.da.FeatureClassToNumPyArray(points,["SHAPE@X", "SHAPE@Y", "SHAPE@Z"])
@@ -414,7 +423,6 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         pntY = np.array([item[1] for item in pntArray])
         pntZ = np.array([item[2] for item in pntArray])
         #arcpy.AddMessage(str(len(pntX)))
-        #arcpy.AddMessage(pntZ)
 
         maxZ = max(pntZ)
         minZ = min(pntZ)
@@ -470,6 +478,7 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
                 arcpy.Delete_management(new_line)    
         except:
             pass
+        '''
         ##Get the center points of the tmpline
         arcpy.FeatureVerticesToPoints_management(tmpline, midpoint, "MID")
 
