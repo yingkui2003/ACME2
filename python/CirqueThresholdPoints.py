@@ -406,7 +406,7 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
             '''
         ##Check the slopes along the line
         ##use filled DEM and 3*cellsize as spacing; save the 3d feature as one output: out3DProfiles
-        arcpy.CopyFeatures_management(tmpline, "d:\\temp\\tmpline.shp")
+        #arcpy.CopyFeatures_management(tmpline, "d:\\temp\\tmpline.shp")
         arcpy.InterpolateShape_3d(dem, tmpline, tmpline3D, cellsize*3)
         arcpy.FeatureVerticesToPoints_management(tmpline3D, points, "ALL")
         pntArray = arcpy.da.FeatureClassToNumPyArray(points,["SHAPE@X", "SHAPE@Y", "SHAPE@Z"])
