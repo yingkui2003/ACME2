@@ -1049,12 +1049,13 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         row[11] = hypo_max
 
         ##Derive the three added slope values: Slpgt33,Slplt20,Slp20to33
-        array = arcpy.RasterToNumPyArray(cirqueSLOPE,"","","",0)
-        slpArr = array[array > -1].astype(int) ##Get all slope cells 
+        array = arcpy.RasterToNumPyArray(cirqueSLOPE,"","","",-1)
+        slpArr = array[array > -1].astype(float) ##Get all slope cells 
         total = len(slpArr)
-        slpgt33Arr = array[array > 33].astype(int) ##Get the slope greater than 33 degree
+        #slpgt33Arr = array[array > 33].astype(int) ##Get the slope greater than 33 degree
+        slpgt33Arr = slpArr[slpArr > 33].astype(float) ##Get the slope greater than 33 degree
         slpgt33 = len(slpgt33Arr)
-        slplt20Arr = array[array < 20].astype(int) ##Get the slope less than 20 degree
+        slplt20Arr = slpArr[slpArr < 20].astype(float) ##Get the slope less than 20 degree
         slplt20 = len(slplt20Arr)
         row[20] = slpgt33 / total * 100 ##the percent of slope > 33 degree 
         row[21] = slplt20 / total * 100 ##the percent of slope < 20 degree 
