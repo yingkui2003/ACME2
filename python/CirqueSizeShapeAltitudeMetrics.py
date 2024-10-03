@@ -1013,9 +1013,17 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
        
         #calculate 3D surface
         ##Step 1: Conduct Suface Volume analysis to generate the surface volume table, volumetable
-        arcpy.SurfaceVolume_3d(cirqueDTM, volumetable, "ABOVE", "0")
+        if arcpy.Exists(volumetable):
+            arcpy.Delete_management(volumetable)
+
+        min_elev = cirqueDTM.minimum
+        #arcpy.AddMessage(min_elev)
+        int_min_elev = int (min_elev - 1)
+        #arcpy.SurfaceVolume_3d(cirqueDTM, volumetable, "ABOVE", "0")
+        arcpy.SurfaceVolume_3d(cirqueDTM, volumetable, "ABOVE", str(int_min_elev))
         ##Step 2: Read the volume table for 3D area and 2Darea, and calculate the A3D/A2D ratio
         arr=arcpy.da.TableToNumPyArray(volumetable, ('AREA_2D', 'AREA_3D'))
+        #arcpy.AddMessage(arr)
         area_2D = float(arr[0][0])
         area_3D = float(arr[0][1])
         Ratio3D2D = area_3D / area_2D
@@ -1032,8 +1040,8 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         row[5] = adjusted_area_3D
  
         ##Calcualte the Hypsometric max and Hypsometric intergal
-        array = arcpy.RasterToNumPyArray(cirqueDTM,"","","",0)
-        EleArr = array[array > 0].astype(int) ##Get the elevations greater than zero
+        array = arcpy.RasterToNumPyArray(cirqueDTM,"","","",int_min_elev)
+        EleArr = array[array > int_min_elev].astype(int) ##Get the elevations greater than zero
         Z_min = np.min(EleArr)
         Z_max = np.max(EleArr)
         Z_mean = np.mean(EleArr)
