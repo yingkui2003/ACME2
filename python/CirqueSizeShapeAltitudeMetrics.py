@@ -1030,7 +1030,11 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         #arcpy.AddMessage(arr)
         area_2D = float(arr[0][0])
         area_3D = float(arr[0][1])
-        Ratio3D2D = area_3D / area_2D
+
+        if area_2D > 0:
+            Ratio3D2D = area_3D / area_2D
+        else: ## if area_2D is zero (very small polygons), set the ratio3d2d as 1
+            Ratio3D2D = 1
         ##Step 3: Assign the values to the attibute fields
         #row[5] = area_3D
         #row[9] = area_2D
