@@ -1773,22 +1773,27 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         row[16] = sin_radians_aspect
         row[17] = cos_radians_aspect
 
-        result = plan_closISE(cirqueDTM, contur) ####, startline, endline)
-
-        planclosISE = result[0] ##planclos
-        #row[3] = result[1] ##startAngle
-        #row[4] = result[2] ##EndAngle
-        #row[5] = result[3] ##AngType
-        #row[6] = result[4] ##Flag
-
-        row[8]= planclosISE
-        arcpy.Append_management(contur, midAltContur, "NO_TEST")
+        try:
+            result = plan_closISE(cirqueDTM, contur) ####, startline, endline)
+            planclosISE = result[0] ##planclos
+            #row[3] = result[1] ##startAngle
+            #row[4] = result[2] ##EndAngle
+            #row[5] = result[3] ##AngType
+            #row[6] = result[4] ##Flag
+            row[8]= planclosISE
+            arcpy.Append_management(contur, midAltContur, "NO_TEST")
+        except:
+            arcpy.AddMessage("There is an error to derive the plan_closISE!")
+            pass            
 
         ##Plan_closSPA
-        angle = plan_closSPA(cirqueDTM)
-        row[23]= angle
-        
-        
+        try:
+            angle = plan_closSPA(cirqueDTM)
+            row[23]= angle
+        except:
+            arcpy.AddMessage("There is an error to derive the plan_closSPA!")
+            pass            
+
         #calculate 3D surface
         ##Step 1: Conduct Suface Volume analysis to generate the surface volume table, volumetable
         if arcpy.Exists(volumetable):
