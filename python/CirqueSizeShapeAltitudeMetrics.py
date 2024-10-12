@@ -636,7 +636,7 @@ for field in new_fields:
     else:
         arcpy.AddField_management(cirques_copy, field, "DOUBLE",10, 1)
 
-new_fields = ("Asp_east","Asp_north")##All float variables count = 2
+new_fields = ("Asp_east","Asp_north", "Asp_strength")##All float variables count = 2
 for field in new_fields:
     if field in Fieldlist:
         pass
@@ -919,7 +919,7 @@ midAltContur = arcpy.CreateFeatureclass_management("in_memory", "midAltContur", 
 #FcID = arcpy.Describe(cirques_copy).OIDFieldName
 FcID = "ID_cirque"
 
-fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_closISE", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33", "Plan_closSPA", "A2D")
+fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_closISE", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33", "Plan_closSPA", "A2D", "Asp_strength")
 volumetable = arcpy.env.scratchFolder + "\\volumetable.txt"
 contur = arcpy.env.scratchGDB + "\\contur"
 #startline = arcpy.env.scratchGDB + "\\startline"
@@ -998,6 +998,12 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         #arcpy.AddMessage("Aspect_cos_mean new: " + str(cos_radians_aspect))
         row[16] = sin_radians_aspect
         row[17] = cos_radians_aspect
+
+        ##derive the vector strength (R) or variance (1-R) of the aspect ##10/11/2024
+        aspect_R = math.sqrt(ASPECT_sin_mean_value * ASPECT_sin_mean_value + ASPECT_cos_mean_value * ASPECT_cos_mean_value)
+        #aspect_var = 1.0 - aspect_R
+        #arcpy.AddMessage("Aspect_strength: " + str(aspect_R))
+        row[25] = aspect_R
 
         try:
             result = plan_closISE(cirqueDTM, contur) ####, startline, endline)

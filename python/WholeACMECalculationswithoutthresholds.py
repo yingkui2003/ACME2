@@ -1155,6 +1155,30 @@ OutputMidAltContour = arcpy.GetParameterAsText(6)
 outputCirques = arcpy.GetParameterAsText(7)
 
 #environments
+##make sure the projection of the input datasets is the same projected projection 
+spatial_ref_cirques = arcpy.Describe(InputCirques).spatialReference
+spatial_ref_dem = arcpy.Describe(InputDEM).spatialReference
+
+
+#if "UTM" in spatial_ref_dem.name:
+if spatial_ref_dem.linearUnitName == "Meter":
+    arcpy.AddMessage("The DEM projection is: " + spatial_ref_dem.name)
+else:
+    arcpy.AddMessage("The unit of the DEM projection is not in meter. Please re-project the DEM to a projected coordinate system for the analysis!")
+    exit()   
+
+#if "UTM" in spatial_ref_crosssections.name:
+if spatial_ref_cirques.linearUnitName == "Meter":
+    arcpy.AddMessage("The cirque outline projection is: " + spatial_ref_cirques.name)
+else:
+    arcpy.AddMessage("The unit of the cirque outline projection is not in meter. Please re-project it to a projected coordinate system for the analysis!")
+    exit()   
+
+if spatial_ref_dem.name == spatial_ref_cirques.name:
+    arcpy.AddMessage("Both DEM and cirque outlines have the same projected coordinate system: " + spatial_ref_dem.name)
+else:
+    arcpy.AddMessage("The DEM and cirque outlines have different map projections. Please re-project the datasets to the same projection!")
+    exit()   
 
 spatialref=arcpy.Describe(InputCirques).spatialReference #get spat ref from input
 arcpy.env.outputCoordinateSystem = spatialref #output coordinate system is taken from spat ref
@@ -1236,7 +1260,7 @@ for field in new_fields:
     else:
         arcpy.AddField_management(cirques_copy, field, "DOUBLE",10, 1)
 
-new_fields = ("Asp_east","Asp_north")##All float variables count = 2
+new_fields = ("Asp_east","Asp_north", "Asp_strength")##All float variables count = 3
 for field in new_fields:
     if field in Fieldlist:
         pass
@@ -1286,6 +1310,15 @@ for field in new_fields:
         pass
     else:
         arcpy.AddField_management(cirques_copy, field, "DOUBLE",10, 4)
+
+##axis curve-fit variables 
+new_fields = ("L_NormExp_A","L_NormExp_B","L_NormExp_R2") ##float variables with high digits
+for field in new_fields:
+    if field in Fieldlist:
+        pass
+    else:
+        arcpy.AddField_management(cirques_copy, field, "DOUBLE",10, 4)
+
 
 ##Catchment variables
 if "Maxabalt" in Fieldlist:  ## count = 1
@@ -1692,7 +1725,7 @@ midAltContur = arcpy.CreateFeatureclass_management("in_memory", "midAltContur", 
 #FcID = arcpy.Describe(cirques_copy).OIDFieldName
 FcID = "ID_cirque"
 
-fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_closISE", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33", "Plan_closSPA", "A2D")
+fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_closISE", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33", "Plan_closSPA", "A2D", "Asp_strength")
 volumetable = arcpy.env.scratchFolder + "\\volumetable.txt"
 contur = arcpy.env.scratchGDB + "\\contur"
 #startline = arcpy.env.scratchGDB + "\\startline"
@@ -1772,6 +1805,12 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         #arcpy.AddMessage("Aspect_cos_mean new: " + str(cos_radians_aspect))
         row[16] = sin_radians_aspect
         row[17] = cos_radians_aspect
+
+        ##derive the vector strength (R) or variance (1-R) of the aspect ##10/11/2024
+        aspect_R = math.sqrt(ASPECT_sin_mean_value * ASPECT_sin_mean_value + ASPECT_cos_mean_value * ASPECT_cos_mean_value)
+        #aspect_var = 1.0 - aspect_R
+        #arcpy.AddMessage("Aspect_strength: " + str(aspect_R))
+        row[25] = aspect_R
 
         try:
             result = plan_closISE(cirqueDTM, contur) ####, startline, endline)
@@ -2005,6 +2044,11 @@ Axgrad_list = []
 L_Exp_A_list = []
 L_Exp_B_list = []
 L_Exp_R2_list = []
+
+L_NormExp_A_list = []
+L_NormExp_B_list = []
+L_NormExp_R2_list = []
+
 L_Kcurv_C_list = []
 L_Kcurv_R2_list = []
 W_Quad_C_list = []
@@ -2070,12 +2114,18 @@ with arcpy.da.SearchCursor("in_memory\\length3D", ["ID_Cirque","SHAPE@", "SHAPE@
         pointH = [y - min_Z for y in PointZ]
         #arcpy.AddMessage(pointH)
         #arcpy.AddMessage(LengthfromStart)
-
+        max_H = max(pointH)
         HArr = np.array(pointH)
+        norm_HArr = HArr / max_H #* 100
+
         LenArr = np.array(LengthfromStart)
+        max_len = max(LengthfromStart)
+        norm_lenArr = LenArr / max_len #* 100
 
         validHArr = HArr[HArr > 0]
         validLenArr = LenArr[HArr > 0]
+        valid_norm_HArr = norm_HArr[HArr > 0]
+        valid_norm_lenArr = norm_lenArr[HArr > 0]
         
         #expfit_results = exp_curve_fit(LengthfromStart[1:], pointH[1:])
         try:
@@ -2099,6 +2149,30 @@ with arcpy.da.SearchCursor("in_memory\\length3D", ["ID_Cirque","SHAPE@", "SHAPE@
         L_Exp_A_list.append(a)
         L_Exp_B_list.append(b)
         L_Exp_R2_list.append(R2)
+
+        #try the normalized fit 10/09/2024
+        try:
+            #polyfit_results = polyfit(validLenArr, [math.log(y) for y in pointH[1:]], 1)
+            
+            polyfit_results = polyfit(valid_norm_lenArr, np.log(valid_norm_HArr), 1)
+            #a = polyfit[0]
+            #arcpy.AddMessage(polyfit_results)
+            b = polyfit_results['polynomial'][0]
+            a = np.exp(polyfit_results['polynomial'][1])
+            R2 = polyfit_results['determination']
+
+            #arcpy.AddMessage("Exp_fit b is: " + str(b))       
+            #arcpy.AddMessage("Exp_fit a is: " + str(a))       
+            #arcpy.AddMessage("Exp_fit R2 is: " + str(R2))
+        except:
+            arcpy.AddMessage("There is an error!")
+            b = -999
+            a = -999
+            R2 = -999
+
+        L_NormExp_A_list.append(a)
+        L_NormExp_B_list.append(b)
+        L_NormExp_R2_list.append(R2)
         
         ###Calculate the profile closure
         #arcpy.AddMessage(LengthfromStart)
@@ -2198,7 +2272,7 @@ del row, cursor
 #FcID = arcpy.Describe(cirques_copy).OIDFieldName
 FcID = "ID_cirque"
 
-fields = (FcID, "Axprofclos", "Axhli", "Axasp", "Axamp", "Axgrad", "L_Exp_A","L_Exp_B","L_Exp_R2","L_Kcurv_C","L_Kcurv_R2","W_Quad_C", "W_Quad_R2")
+fields = (FcID, "Axprofclos", "Axhli", "Axasp", "Axamp", "Axgrad", "L_Exp_A","L_Exp_B","L_Exp_R2","L_Kcurv_C","L_Kcurv_R2","W_Quad_C", "W_Quad_R2", "L_NormExp_A","L_NormExp_B","L_NormExp_R2")
 
 with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
     for row in cursor:
@@ -2218,6 +2292,10 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
             row[10] = L_Kcurv_R2_list[fid]
             row[11] = W_Quad_C_list[fid]
             row[12] = W_Quad_R2_list[fid]
+
+            row[13] = L_NormExp_A_list[fid]
+            row[14] = L_NormExp_B_list[fid]
+            row[15] = L_NormExp_R2_list[fid]
 
             #update cursor
             cursor.updateRow(row)

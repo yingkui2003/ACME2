@@ -116,7 +116,11 @@ def connect_major_line_sections(line):
         ##only connect the line when the distance between the start or end points
         ##of two line section is less than the minimum length of the two lines
         minlength = min(start_line_length, end_line_length)
+        #arcpy.AddMessage("minlength: " + str(minlength))
+
         mingap = min(minlength, 60)
+        #arcpy.AddMessage("mingap: " + str(mingap))
+
         if distArr[index] < mingap:
             #arcpy.AddMessage("Connect two lines")
             array = arcpy.Array([arcpy.Point(startpntX[start],startpntY[start]),arcpy.Point(endpntX[end], endpntY[end])])
@@ -382,7 +386,7 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         arcpy.analysis.Clip(cirque_line, "in_memory\\OutBndCln_poly", tmpline)
         arcpy.MultipartToSinglepart_management(tmpline, "in_memory\\tmpline_singlePart")
         arcpy.Dissolve_management("in_memory\\tmpline_singlePart", tmpline, "", "", "SINGLE_PART")
-        
+
         ##test if there are more line sections
         lineArray = arcpy.da.FeatureClassToNumPyArray(tmpline,["SHAPE@LENGTH"])
         if len(lineArray) == 0: ##if no line is created
@@ -397,6 +401,7 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         if len(lineArray) > 1:
             #arcpy.AddMessage("multiple lines created, need to connect the lines")
             ##only connected major lines
+            ##remove the small lines
             connect_major_line_sections(tmpline)
             '''
             ##only keep the longest line section
@@ -529,6 +534,31 @@ method = arcpy.GetParameterAsText(2)
 OutputCirques = arcpy.GetParameterAsText(3)
 
 arcpy.Delete_management("in_memory") ### Empty the in_memory
+
+##make sure the projection of the input datasets is the same projected projection 
+spatial_ref_cirques = arcpy.Describe(InputCirques).spatialReference
+spatial_ref_dem = arcpy.Describe(InputDEM).spatialReference
+
+
+#if "UTM" in spatial_ref_dem.name:
+if spatial_ref_dem.linearUnitName == "Meter":
+    arcpy.AddMessage("The DEM projection is: " + spatial_ref_dem.name)
+else:
+    arcpy.AddMessage("The unit of the DEM projection is not in meter. Please re-project the DEM to a projected coordinate system for the analysis!")
+    exit()   
+
+#if "UTM" in spatial_ref_crosssections.name:
+if spatial_ref_cirques.linearUnitName == "Meter":
+    arcpy.AddMessage("The cirque outline projection is: " + spatial_ref_cirques.name)
+else:
+    arcpy.AddMessage("The unit of the cirque outline projection is not in meter. Please re-project it to a projected coordinate system for the analysis!")
+    exit()   
+
+if spatial_ref_dem.name == spatial_ref_cirques.name:
+    arcpy.AddMessage("Both DEM and cirque outlines have the same projected coordinate system: " + spatial_ref_dem.name)
+else:
+    arcpy.AddMessage("The DEM and cirque outlines have different map projections. Please re-project the datasets to the same projection!")
+    exit()   
 
 #arcpy.AddMessage(method)
 
