@@ -1,3 +1,8 @@
+# Updattes (1/19/2025)
+(1) Fixed some errors in the curve fitting
+(2) Add a new metric, Asp_strength, for the vector strength of the aspects of all pixels within a cirque
+(3) Add three metrics (L_NormExp_A, L_NormExp_B, L_NormExp_R2) for the exponential function fitting of the length profile based on standardized X-Y values. 
+
 # ACME2 toolbox
 ACME2 is a revision and extension of the ACME toolbox (Spagnolo, M., Pellitero, R., Barr, I.D., Ely, J.C., Pellicer, X.M., Rea, B.R., 2017. ACME, a GIS tool for automated cirque metric extraction. Geomorphology 278, 280–286.) to derive cirque metrics based on cirque outlines and a DEM. The major revisons and extensions include:
 
