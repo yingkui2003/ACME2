@@ -1,13 +1,9 @@
 #-------------------------------------------------------------------------------
-# Name:        WholeACMEcalculationsWithThresholds
-# Purpose:     Derive all cirque metrics based on Cirque outlines, a DEM, and user-provided thresholds
+# Name:        CirqueAxisMetrics.py
+# Purpose:     Derive the axis-related cirque metrics
 #
 # Author: Yingkui Li
-# This program derive cirque related metrics based on cirque outlines and a DEM
-# The first step is to determine the cirque threshold points
-# The second step is to derive length and width info, as well as the area, and parameters
-# The third step is to detive the 3D statistics and hypsometric parameters
-# Some of the codes are revised based on the ACME codes by Ramon Pellitero and Matteo Spagnolo 2016
+# This program derive cirque axis-related metrics based on cirque outlines, a DEM, and Length and Width features
 # 
 # Created:     05/26/2023
 # Copyright:   (c) Yingkui Li 2023
@@ -26,7 +22,7 @@ from scipy import optimize
 arcpy.env.overwriteOutput = True
 arcpy.env.XYTolerance= "0.01 Meters"
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+#arcpy.Delete_management("in_memory") ### Empty the in_memory
 ArcGISPro = 0
 arcpy.AddMessage("The current python version is: " + str(sys.version_info[0]))
 if sys.version_info[0] == 2:  ##For ArcGIS 10, need to check the 3D and Spatial Extensions
@@ -56,7 +52,10 @@ else:
     raise Exception("Must be using Python 2.x or 3.x")
     exit()   
 
-
+temp_workspace = "in_memory"  
+if ArcGISPro:
+    temp_workspace = "memory"
+    
 # Polynomial Regression
 def polyfit(x, y, degree):
     results = {}
@@ -162,7 +161,7 @@ arcpy.env.overwriteOutput = True #every new created file with the same name as a
 arcpy.env.XYTolerance= "1 Meters"
 arcpy.env.scratchWorkspace=arcpy.env.scratchGDB #define a default folder/database where intermediate product will be stored
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 #cellsize = arcpy.GetRasterProperties_management(InputDEM,"CELLSIZEX")
 #cellsize_int = int(float(cellsize.getOutput(0)))
@@ -210,14 +209,14 @@ for field in new_fields:
 ##Derive New cirque metrics info 
 arcpy.AddMessage("Derive axis-related cirque metrics: Axprofileclos, Ax intergal, Ax Aspect, Amplitude, Axgrad, Length curve fitting parameters, and Width curve fitting parameters")
 
-selLength = "in_memory\\selLength"
-selWidth = "in_memory\\selWidth"
+selLength = temp_workspace + "\\selLength"
+selWidth = temp_workspace + "\\selWidth"
 
 ##Check the direction and flip the length from low to high elevations
 arcpy.AddMessage("----derive length axis-related cirque metrics and curve fitting parameters")
 Check_If_Flip_Line_Direction(InputLength, InputDEM)
-arcpy.InterpolateShape_3d(InputDEM, InputLength, "in_memory\\length3D", 90) ##smoothed using 3 cell-size 
-arcpy.InterpolateShape_3d(InputDEM, InputWidth, "in_memory\\width3D", 90) ##smoothed using 3 cell-size 
+arcpy.InterpolateShape_3d(InputDEM, InputLength, temp_workspace + "\\length3D", 90) ##smoothed using 3 cell-size 
+arcpy.InterpolateShape_3d(InputDEM, InputWidth, temp_workspace + "\\width3D", 90) ##smoothed using 3 cell-size 
 
 FID_list = []
 HLHI_list = []
@@ -239,7 +238,7 @@ L_Kcurv_R2_list = []
 W_Quad_C_list = []
 W_Quad_R2_list = []
 
-with arcpy.da.SearchCursor("in_memory\\length3D", ["ID_Cirque","SHAPE@", "SHAPE@Length"]) as cursor:
+with arcpy.da.SearchCursor(temp_workspace + "\\length3D", ["ID_Cirque","SHAPE@", "SHAPE@Length"]) as cursor:
     i = 0
     for row in cursor: ##Loop for each line
         PointX = []
@@ -310,10 +309,16 @@ with arcpy.da.SearchCursor("in_memory\\length3D", ["ID_Cirque","SHAPE@", "SHAPE@
         norm_lenArr = LenArr / max_len #* 100
         #arcpy.AddMessage(norm_lenArr)
         
-        validHArr = HArr[HArr > 0]
-        validLenArr = LenArr[HArr > 0]
-        valid_norm_HArr = norm_HArr[HArr > 0]
-        valid_norm_lenArr = norm_lenArr[HArr > 0]
+        #validHArr = HArr[HArr > 0]
+        #validLenArr = LenArr[HArr > 0]
+        validHArr = HArr[np.logical_and(HArr > 0, LenArr > 0)]
+        validLenArr = LenArr[np.logical_and(HArr > 0, LenArr > 0)]
+
+
+        #valid_norm_HArr = norm_HArr[HArr > 0]
+        #valid_norm_lenArr = norm_lenArr[HArr > 0]
+        valid_norm_HArr = norm_HArr[np.logical_and(HArr > 0, LenArr > 0)]
+        valid_norm_lenArr = norm_lenArr[np.logical_and(HArr > 0, LenArr > 0)]
         
         #expfit_results = exp_curve_fit(LengthfromStart[1:], pointH[1:])
         try:
@@ -411,7 +416,7 @@ del row, cursor
 ##Do the width regression
 arcpy.AddMessage("----derive quadratic fitting parameters along the cirque width axis")
                          
-with arcpy.da.SearchCursor("in_memory\\width3D", ["ID_Cirque","SHAPE@"]) as cursor:
+with arcpy.da.SearchCursor(temp_workspace + "\\width3D", ["ID_Cirque","SHAPE@"]) as cursor:
     i = 0
     for row in cursor: ##Loop for each line
         PointX = []
@@ -496,7 +501,7 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
 #delete cursor variables        
 del row, cursor
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 
 

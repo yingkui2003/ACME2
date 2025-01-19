@@ -1,13 +1,8 @@
 #-------------------------------------------------------------------------------
-# Name:        WholeACMEcalculationsWithThresholds
-# Purpose:     Derive all cirque metrics based on Cirque outlines, a DEM, and user-provided thresholds
+# Name:        CirqueCAtchmentMetrics.py
+# Purpose:     Derive the two metrics related to the catchmnent above the cirque focus point
 #
 # Author: Yingkui Li
-# This program derive cirque related metrics based on cirque outlines and a DEM
-# The first step is to determine the cirque threshold points
-# The second step is to derive length and width info, as well as the area, and parameters
-# The third step is to detive the 3D statistics and hypsometric parameters
-# Some of the codes are revised based on the ACME codes by Ramon Pellitero and Matteo Spagnolo 2016
 # 
 # Created:     05/26/2023
 # Copyright:   (c) Yingkui Li 2023
@@ -23,7 +18,6 @@ import numpy as np
 arcpy.env.overwriteOutput = True
 arcpy.env.XYTolerance= "0.01 Meters"
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
 ArcGISPro = 0
 arcpy.AddMessage("The current python version is: " + str(sys.version_info[0]))
 if sys.version_info[0] == 2:  ##For ArcGIS 10, need to check the 3D and Spatial Extensions
@@ -53,7 +47,9 @@ else:
     raise Exception("Must be using Python 2.x or 3.x")
     exit()   
 
-
+temp_workspace = "in_memory"  
+if ArcGISPro:
+    temp_workspace = "memory"
 
 ##Main program
 # Script arguments
@@ -68,7 +64,7 @@ arcpy.env.overwriteOutput = True #every new created file with the same name as a
 arcpy.env.XYTolerance= "1 Meters"
 arcpy.env.scratchWorkspace=arcpy.env.scratchGDB #define a default folder/database where intermediate product will be stored
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 #cellsize = arcpy.GetRasterProperties_management(InputDEM,"CELLSIZEX")
 #cellsize_int = int(float(cellsize.getOutput(0)))
@@ -113,23 +109,19 @@ facc = FlowAccumulation(fdir) ##Flow accmulation
 #cirque_thresholds = CirqueThresholdsFcc (cirques_copy, facc, No_Overlap)
 
 ##Derive the streams and cross sections for cirque thresholds
-Singlepoint = "in_memory\\Singlepoint"
-Streams = "in_memory\\Streams"
-FCselected = "in_memory\\FCselected"  
-Singlestream = "in_memory\\Singlestream"
-SingleWs = "in_memory\\SingleWs"
-#singleBND = "in_memory\\singleBND"
+Singlepoint = temp_workspace + "\\Singlepoint"
+Streams = temp_workspace + "\\Streams"
+FCselected = temp_workspace + "\\FCselected"  
+Singlestream = temp_workspace + "\\Singlestream"
+SingleWs = temp_workspace + "\\SingleWs"
 
 #Get the minimum area of the cirque dataset
 cirqueArr = arcpy.da.FeatureClassToNumPyArray(InputCirques, "SHAPE@AREA")
 areas = np.array([item[0] for item in cirqueArr])
 min_cirque_area = np.min(areas)
-#arcpy.AddMessage(str(min_cirque_area))
 
 threshold_cells = int(min_cirque_area / (cellsize_int * cellsize_int)/4) ##divde 2 to make sure there is stream out from the cirque
-#arcpy.AddMessage(str(threshold_cells))
 threshold = min(50, threshold_cells)
-#arcpy.AddMessage(str(threshold))
 
 outGreaterThan = Con(facc > threshold, 1,0)  ##Determine the highest flowaccumuation part
 # Process: Stream Link
@@ -139,19 +131,17 @@ outStreamLink = StreamLink(outGreaterThan, fdir)
 StreamToFeature(outStreamLink, fdir, Streams, "NO_SIMPLIFY")
 
 
-MaxFccTable = "in_memory\\MaxFccTable"
-TmpStream = "in_memory\\TmpStream"
+MaxFccTable = temp_workspace + "\\MaxFccTable"
+TmpStream = temp_workspace + "\\TmpStream"
 
 StreamToFeature(outStreamLink, fdir, TmpStream, "SIMPLIFY")
 ZonalStatisticsAsTable(outStreamLink, "VALUE", facc, MaxFccTable, "DATA", "MAXIMUM")
 # Process: Join Field
 arcpy.JoinField_management(TmpStream, "grid_code", MaxFccTable, "Value", "MAX")  ##Join to get the flow accumulation value
 
-#FcID = arcpy.Describe(cirque_thresholds).OIDFieldName
 
-#crosssections = cross_sections(cirque_thresholds, FcID, TmpStream, "MAX", 50, 120)
 ##Convert cirque outline polygon to polylines
-cirque_lines = "in_memory\\cirque_lines"
+cirque_lines = temp_workspace + "\\cirque_lines"
 arcpy.PolygonToLine_management(InputCirques, cirque_lines, "IGNORE_NEIGHBORS")
 
 ##Derive the watershed for cirque thresholds
@@ -160,14 +150,11 @@ arcpy.AddField_management(TotalWS, "ID_cirque", "INTEGER", 6)
 
 countResult = arcpy.GetCount_management(cirque_lines)
 count = int(countResult.getOutput(0))
-#FcID = arcpy.Describe(cirque_lines).OIDFieldName
-#FcID = arcpy.Describe(inputFCcopy).OIDFieldName
+
 FcID = "ID_cirque"
 
 linearr = arcpy.da.FeatureClassToNumPyArray(cirque_lines, FcID)
 id_list = np.array([item[0] for item in linearr])
-
-#arcpy.AddMessage(id_list)
 
 for fid in id_list:
     #arcpy.AddMessage("Generating cirque "+str(ifeature + 1)+" of "+str(count))
@@ -182,7 +169,7 @@ for fid in id_list:
     pntcount = int(pntcountResult.getOutput(0))
     #arcpy.AddMessage("the number of point is:" + str(pntcount))
     if (pntcount == 0): ##if no intersect points, use the buffer to get the intersection points for another time
-        tmpbuf = "in_memory\\tmpbuf"
+        tmpbuf = temp_workspace + "\\tmpbuf"
         arcpy.Buffer_analysis(FCselected, tmpbuf, "5 Meters")
         arcpy.Intersect_analysis([Streams, tmpbuf], Singlepoint, "#", "#", "POINT")
         pntcountResult = arcpy.GetCount_management(Singlepoint)
@@ -198,12 +185,12 @@ for fid in id_list:
         arcpy.RasterToPolygon_conversion(outWs, SingleWs, "NO_SIMPLIFY", "VALUE")
         
         ##Append the cirque polygon to the singleWS to prevent very small ws created: Added by Yingkui Li 10/26/2023
-        arcpy.Select_analysis(InputCirques, "in_memory\\Selcirque", query)
-        arcpy.Append_management("in_memory\\Selcirque", SingleWs, "NO_TEST")
+        arcpy.Select_analysis(InputCirques, temp_workspace + "\\Selcirque", query)
+        arcpy.Append_management(temp_workspace + "\\Selcirque", SingleWs, "NO_TEST")
         
-        arcpy.Dissolve_management(SingleWs, "in_memory\\dissolve_SingleWs")
-        arcpy.AddField_management("in_memory\\dissolve_SingleWs", "ID_cirque", "INTEGER", 6)
-        with arcpy.da.UpdateCursor("in_memory\\dissolve_SingleWs", "ID_cirque") as cursor:
+        arcpy.Dissolve_management(SingleWs, temp_workspace + "\\dissolve_SingleWs")
+        arcpy.AddField_management(temp_workspace + "\\dissolve_SingleWs", "ID_cirque", "INTEGER", 6)
+        with arcpy.da.UpdateCursor(temp_workspace + "\\dissolve_SingleWs", "ID_cirque") as cursor:
             for row in cursor:
                row[0]=fid
                cursor.updateRow(row)
@@ -211,12 +198,12 @@ for fid in id_list:
 
     
         
-        arcpy.Append_management("in_memory\\dissolve_SingleWs", TotalWS, "NO_TEST")        
+        arcpy.Append_management(temp_workspace + "\\dissolve_SingleWs", TotalWS, "NO_TEST")        
     
 
 #arcpy.CopyFeatures_management(cirque_thresholds, OutputThresholds)
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 #arcpy.CopyFeatures_management(TotalWS, "d:\\temp\\TotalWS.shp")
 
@@ -228,7 +215,7 @@ FcID = "ID_cirque"
 
 fields = ("SHAPE@", "SHAPE@AREA","Z_max","Z_mean", "Maxabalt", "Pctabarea", FcID)
 
-selWs = "in_memory\\selWs"
+selWs = temp_workspace + "\\selWs"
 
 with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
     i = 0
@@ -236,7 +223,7 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
         ##Get the watershed that is intersect with row[0] ##Need to check this one!! may need to do the threshold first
         #arcpy.SpatialJoin_analysis(TotalWS, row[0], selWs, "JOIN_ONE_TO_ONE", "KEEP_COMMON", '#', "INTERSECT", "1 Meters", "#")
         ##Dissolve the watershed
-        #arcpy.Dissolve_management(selWs, "in_memory\\dissolve_selWs")
+        #arcpy.Dissolve_management(selWs, temp_workspace + "\\dissolve_selWs")
         #try:
         query = "ID_cirque = "+ str(row[6])
         #arcpy.AddMessage(query)
@@ -262,27 +249,27 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
             row[4] = maxabalt
             ##Need to figure out the area above the cirques
             ##Erase the watershed using cirque polygon
-            arcpy.Erase_analysis(selWs, row[0], "in_memory\\ws_leftover")
-            wsarr = arcpy.da.FeatureClassToNumPyArray("in_memory\\ws_leftover", "OID@")
+            arcpy.Erase_analysis(selWs, row[0], temp_workspace + "\\ws_leftover")
+            wsarr = arcpy.da.FeatureClassToNumPyArray(temp_workspace + "\\ws_leftover", "OID@")
             ab_area = 0
             if len(wsarr) > 0:
                 ##multiple parts to single parts
-                arcpy.MultipartToSinglepart_management("in_memory\\ws_leftover", "in_memory\\ws_leftover_singleParts")
+                arcpy.MultipartToSinglepart_management(temp_workspace + "\\ws_leftover", temp_workspace + "\\ws_leftover_singleParts")
                 ##delete small spurious polygons *1 cell sizes
-                with arcpy.da.UpdateCursor("in_memory\\ws_leftover_singleParts", 'SHAPE@AREA') as cursor2:  ##outline_cp is the outmost simplified outlines
+                with arcpy.da.UpdateCursor(temp_workspace + "\\ws_leftover_singleParts", 'SHAPE@AREA') as cursor2:  ##outline_cp is the outmost simplified outlines
                     for row2 in cursor2:
                         if row2[0] < 1000: ##about 1 cell-sizes pixcels
                             cursor2.deleteRow()
                 del row2, cursor2
-                wsarr2 = arcpy.da.FeatureClassToNumPyArray("in_memory\\ws_leftover_singleParts", "OID@")
+                wsarr2 = arcpy.da.FeatureClassToNumPyArray(temp_workspace + "\\ws_leftover_singleParts", "OID@")
                 if len(wsarr2) > 0:
                     ##get the elevation info for the polygons
                     Zonaltable = arcpy.env.scratchGDB + "\\Zonaltable"
-                    outZSaT = ZonalStatisticsAsTable("in_memory\\ws_leftover_singleParts", "ObjectID", WsDTM, Zonaltable, "NODATA", "MEAN")
-                    arcpy.JoinField_management("in_memory\\ws_leftover_singleParts", "ObjectID", Zonaltable, "ObjectID_1", ["MEAN"])
+                    outZSaT = ZonalStatisticsAsTable(temp_workspace + "\\ws_leftover_singleParts", "ObjectID", WsDTM, Zonaltable, "NODATA", "MEAN")
+                    arcpy.JoinField_management(temp_workspace + "\\ws_leftover_singleParts", "ObjectID", Zonaltable, "ObjectID_1", ["MEAN"])
                     arcpy.Delete_management(Zonaltable)
                     ##Get the total areas with mean > Z_mean 
-                    with arcpy.da.SearchCursor("in_memory\\ws_leftover_singleParts", ['SHAPE@AREA', 'MEAN']) as cursor3:  ##outline_cp is the outmost simplified outlines
+                    with arcpy.da.SearchCursor(temp_workspace + "\\ws_leftover_singleParts", ['SHAPE@AREA', 'MEAN']) as cursor3:  ##outline_cp is the outmost simplified outlines
                         for row3 in cursor3:
                             #arcpy.AddMessage("Mean is: " + str(row3[1]))
                             try:
@@ -297,9 +284,6 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
 
         #update cursor
         cursor.updateRow(row)
-        #except:
-        #    arcpy.AddMessage("There is an error in the calculation. Move to the next one")
-        #    pass
 
         i += 1
         arcpy.AddMessage("Finished cirque #" + str(i))
@@ -309,7 +293,7 @@ del row, cursor
 
 arcpy.Delete_management(TotalWS) 
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 
 

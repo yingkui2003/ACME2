@@ -26,7 +26,7 @@ import numpy as np
 arcpy.env.overwriteOutput = True
 arcpy.env.XYTolerance= "0.01 Meters"
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+#arcpy.Delete_management("in_memory") ### Empty the in_memory
 ArcGISPro = 0
 arcpy.AddMessage("The current python version is: " + str(sys.version_info[0]))
 if sys.version_info[0] == 2:  ##For ArcGIS 10, need to check the 3D and Spatial Extensions
@@ -56,7 +56,10 @@ else:
     raise Exception("Must be using Python 2.x or 3.x")
     exit()   
 
-
+temp_workspace = "in_memory"  
+if ArcGISPro:
+    temp_workspace = "memory"
+    
 #---------------------------------------------------------------------------------------------------------------
 # This function calculates the distance between two points
 #--------------------------------------------------------------------------------------------------------------- 
@@ -124,8 +127,8 @@ def connect_line_sections(line):
     lineArray = arcpy.da.FeatureClassToNumPyArray(line,"SHAPE@LENGTH")
     if len(lineArray) == 1:
         return line
-    startpnts = "in_memory\\startpnts"
-    endpnts = "in_memory\\endpnts"
+    startpnts = temp_workspace + "\\startpnts"
+    endpnts = temp_workspace + "\\endpnts"
     arcpy.FeatureVerticesToPoints_management(line, startpnts, "START")
     pntArray = arcpy.da.FeatureClassToNumPyArray(startpnts,["SHAPE@X", "SHAPE@Y"])
     startpntX = np.array([item[0] for item in pntArray])
@@ -154,7 +157,7 @@ def connect_line_sections(line):
     indexArr = np.argsort(distArr)
     #arcpy.AddMessage(indexArr)
 
-    connectionline = arcpy.CreateFeatureclass_management("in_memory", "connectionline","POLYLINE","","","",line)
+    connectionline = arcpy.CreateFeatureclass_management(temp_workspace, "connectionline","POLYLINE","","","",line)
     new_line_cursor = arcpy.da.InsertCursor(connectionline, ('SHAPE@'))
     
     for i in range(pntCount-1):
@@ -169,10 +172,10 @@ def connect_line_sections(line):
     del new_line_cursor
 
     arcpy.Append_management(connectionline, line, "NO_TEST")
-    arcpy.Dissolve_management(line, "in_memory\\line_dissolve")
-    arcpy.CopyFeatures_management("in_memory\\line_dissolve", line)
+    arcpy.Dissolve_management(line, temp_workspace + "\\line_dissolve")
+    arcpy.CopyFeatures_management(temp_workspace + "\\line_dissolve", line)
 
-    arcpy.Delete_management ("in_memory\\line_dissolve")
+    arcpy.Delete_management (temp_workspace + "\\line_dissolve")
     arcpy.Delete_management (connectionline)
     
     return line
@@ -211,16 +214,16 @@ def plan_closSPA(cirqueDEM):
     #arcpy.AddMessage("mid_height is: " + str(mid_height))
     
     #Step 2: Get the contourline of the mid-height
-    midHcontour = Contour(cirqueDEM, "in_memory/cont", 10000, mid_height)
-    lineArray = arcpy.da.FeatureClassToNumPyArray("in_memory/cont","SHAPE@LENGTH")
+    midHcontour = Contour(cirqueDEM, temp_workspace + "\\cont", 10000, mid_height)
+    lineArray = arcpy.da.FeatureClassToNumPyArray(temp_workspace + "\\cont","SHAPE@LENGTH")
     if len(lineArray) > 1: ##if more than one contour lines
         arcpy.AddMessage("multiple contour sections, connect into one!")
-        connect_line_sections("in_memory/cont")
+        connect_line_sections(temp_workspace + "\\cont")
         
-    lineArray = arcpy.da.FeatureClassToNumPyArray("in_memory/cont","SHAPE@LENGTH")
+    lineArray = arcpy.da.FeatureClassToNumPyArray(temp_workspace + "\\cont","SHAPE@LENGTH")
     lengthArr = np.array([item[0] for item in lineArray])
     max_length = np.max(lengthArr)
-    with arcpy.da.UpdateCursor("in_memory/cont", "SHAPE@LENGTH") as cursor:
+    with arcpy.da.UpdateCursor(temp_workspace + "\\cont", "SHAPE@LENGTH") as cursor:
         for row in cursor:
             if row[0] < (max_length-0.1): ##This step reomve the small contour lines
                 arcpy.AddMessage("Delete small contour lines")
@@ -229,7 +232,7 @@ def plan_closSPA(cirqueDEM):
 
     #Step 3: find the coordinates of first, mid and last points along the mid_height contour
     ##Get the start and end points of the contour line
-    with arcpy.da.SearchCursor("in_memory/cont", "SHAPE@") as cursor:
+    with arcpy.da.SearchCursor(temp_workspace + "\\cont", "SHAPE@") as cursor:
         for row in cursor:
             #Get start point
             startpt = row[0].firstPoint
@@ -242,8 +245,8 @@ def plan_closSPA(cirqueDEM):
             y_end = endpt.Y    
 
     #Get the center point of contourline
-    arcpy.FeatureVerticesToPoints_management("in_memory/cont", "in_memory/mid_point", "MID")
-    pntArray = arcpy.da.FeatureClassToNumPyArray("in_memory\\mid_point",["SHAPE@X", "SHAPE@Y"])
+    arcpy.FeatureVerticesToPoints_management(temp_workspace + "\\cont", temp_workspace + "\\mid_point", "MID")
+    pntArray = arcpy.da.FeatureClassToNumPyArray(temp_workspace + "\\mid_point",["SHAPE@X", "SHAPE@Y"])
     pntXArr = np.array([item[0] for item in pntArray])
     pntYArr = np.array([item[1] for item in pntArray])
     x_mid = np.mean(pntXArr)
@@ -274,107 +277,10 @@ def plan_closSPA(cirqueDEM):
             Angle = 360 - Angle
                 
     ##delete the temp dataset
-    arcpy.Delete_management ("in_memory/cont")
-    arcpy.Delete_management ("in_memory/mid_point")
+    arcpy.Delete_management (temp_workspace + "\\cont")
+    arcpy.Delete_management (temp_workspace + "\\mid_point")
 
     return Angle   
-'''
-#------------------------------------------------------------------------------------------------------------
-# This function calculates the plan closure for a cirque. The codes are from ACME codes with slight revisions
-# Old codes from ACME
-#------------------------------------------------------------------------------------------------------------
-def plan_closSPA(cirqueDEM):
-    #tool to get the plan_closure
-    meanH = int(cirqueDEM.mean)
-    ##print meanH
-    mid_height=(meanH)
-    midHcontour = Contour(cirqueDEM, "in_memory/cont", 10000, mid_height)
-    geometry = arcpy.CopyFeatures_management(midHcontour, arcpy.Geometry())
-    #get total length of geometry to select only the longest contour if at that elevation there are more than one line
-    lenghtlist=[]
-    for x in geometry:
-        #arcpy.AddMessage("length is:" + str(x.length))
-        if x.length > 100: ##contour needs to > 100 m
-            lenghtlist.append(x.length)
-    if len(lenghtlist) > 0:
-        maxlength=max(lenghtlist)
-        index=lenghtlist.index(maxlength)
-        goodgeometry=geometry[index]
-        maximum=int(geometry[index].length)
-        #find the coordinates of first, mid and last points along the mid_height contour
-        point_coord_list=[]
-        for m in range(0, maximum+1, int(maximum/2)):
-            points = goodgeometry.positionAlongLine (m)
-            centroid = points.centroid
-            point_coord_list.append(centroid.X)
-            point_coord_list.append(centroid.Y)
-        #define the coordinates
-        x_start,y_start=point_coord_list[0],point_coord_list[1]
-        x_end,y_end=point_coord_list[4],point_coord_list[5]
-        x_mid,y_mid=point_coord_list[2],point_coord_list[3]
-
-        #to avoid dividing by 0 in the next section, i.e. when getting s1 and s2, x_mid and x_end and x1 cannot have the same value
-        if x_end==x_start:
-            x_end+=0.00001
-        elif x_mid==x_end:
-            x_end+=0.00001
-        else:
-            pass
-
-        #end_start and mid_end lines midpoints coordinates
-
-        m1x,m1y= (x_end+x_start)/2, (y_end+y_start)/2
-        m2x,m2y= (x_mid+x_end)/2, (y_mid+y_end)/2
-
-        # slope of the end_start and mid_end lines
-        s1=(y_end-y_start)/(x_end-x_start)
-        if s1 == 0:
-            s1 = 0.00001
-        ##print s1
-        s2=(y_mid-y_end)/(x_mid-x_end)
-        ##print s2
-        if s2 == 0:
-            s2 = 0.00001
-
-        #inverse slope
-        is1=-1*(1/s1)
-        is2=-1*(1/s2)
-
-        #equations that enable to define the point of intersection between the two lines passing by the midpoints and perpendicular to the end_start and mid_end segments
-        a=np.array([[-is1,1],[-is2,1]])
-        b=np.array([(-m1x*is1+m1y),(-m2x*is2+m2y)])
-        try:
-            centre=np.linalg.solve(a,b)
-        except:
-            arcpy.AddMessage("three points are probably colinear")
-            #print "three points are probably colinear"
-            return 0
-
-        #measure distances between key points
-        dist_centre_start = math.sqrt((math.pow((x_start-centre[0]),2))+(math.pow((y_start-centre[1]),2)))
-        dist_centre_end = math.sqrt((math.pow((x_end-centre[0]),2))+(math.pow((y_end-centre[1]),2)))
-        dist_centre_mid = math.sqrt((math.pow((x_mid-centre[0]),2))+(math.pow((y_mid-centre[1]),2)))
-        dist_start_end = math.sqrt((math.pow((x_start-x_end),2))+(math.pow((y_start-y_end),2)))
-        #define end_start and mid_centre segments as polylines
-        array_centre_mid=arcpy.Array([arcpy.Point(x_mid, y_mid),arcpy.Point(centre[0], centre[1])])
-        segment_centre_mid=arcpy.Polyline(array_centre_mid)
-        array_start_end=arcpy.Array([arcpy.Point(x_start, y_start),arcpy.Point(x_end, y_end)])
-        segment_start_end=arcpy.Polyline(array_start_end)
-        #verify whether the mid_centre segment intersect end_start segment
-        if segment_centre_mid.crosses(segment_start_end)==False:
-            #calculate 360 degrees - the angle between centre, start and end points
-            Angle = ((2*math.pi - (math.acos(((math.pow(dist_centre_end,2)+math.pow(dist_centre_start,2)-math.pow(dist_start_end,2))/(2*dist_centre_end*dist_centre_start)))))*180/math.pi)
-        else:
-            #calculate the angle between centre, start and end points
-            Angle = (((math.acos(((math.pow(dist_centre_end,2)+math.pow(dist_centre_start,2)-math.pow(dist_start_end,2))/(2*dist_centre_end*dist_centre_start)))))*180/math.pi)
-    else:
-        Angle = 0
-
-    ##delete the temp dataset
-    arcpy.Delete_management ("in_memory/cont")
-
-    return Angle
-'''
 
 #------------------------------------------------------------------------------------------------------------
 # This function calculates the plan closure for a cirque based on the midAlt contours. The plan closure is determined as the
@@ -391,7 +297,7 @@ def plan_closISE(cirqueDEM, midaltcontur): ##, startline, endline):
     #arcpy.AddMessage("mid_alt is: " + str(mid_height))
 
     #Step 2: Get the contourline of the mid-height
-    cont = "in_memory\\cont"
+    cont = temp_workspace + "\\cont"
     midHcontour = Contour(cirqueDEM, cont, 10000, float(mid_height))
 
     lineArray = arcpy.da.FeatureClassToNumPyArray(cont,"SHAPE@LENGTH")
@@ -403,15 +309,15 @@ def plan_closISE(cirqueDEM, midaltcontur): ##, startline, endline):
     arcpy.CopyFeatures_management(cont, midaltcontur)
 
     #Step 3: define the perpendicular line for the start point of the mid_height contour (100 m buffer intersection line with the midalt contour)
-    startpnt = "in_memory\\startpnt"
-    bothpnts = "in_memory\\bothpnts"
+    startpnt = temp_workspace + "\\startpnt"
+    bothpnts = temp_workspace + "\\bothpnts"
     arcpy.FeatureVerticesToPoints_management(cont, startpnt, "START")
     
-    tmpbuf = "in_memory\\tmpbuf"
+    tmpbuf = temp_workspace + "\\tmpbuf"
     arcpy.Buffer_analysis(startpnt, tmpbuf, "100 Meters")
-    cont_clip = "in_memory\\cont_clip"
+    cont_clip = temp_workspace + "\\cont_clip"
     arcpy.Clip_analysis(cont, tmpbuf, cont_clip)
-    clip_cont_single = "in_memory\\clip_cont_single"
+    clip_cont_single = temp_workspace + "\\clip_cont_single"
     arcpy.MultipartToSinglepart_management(cont_clip, clip_cont_single)
     lineArray = arcpy.da.FeatureClassToNumPyArray(clip_cont_single,"SHAPE@LENGTH")
 
@@ -440,13 +346,13 @@ def plan_closISE(cirqueDEM, midaltcontur): ##, startline, endline):
     start_angle = line_direction((startx,starty), (startpnt2x, srartpnt2y))
     #arcpy.AddMessage("Start_angle is: " + str(start_angle))
 
-    #startperpline = "in_memory\\startperpline"
+    #startperpline = temp_workspace + "\\startperpline"
     #extend_line((startx,starty), (startpnt2x, srartpnt2y), 20000, cont, startperpline)
     ##Copy startline
     #arcpy.CopyFeatures_management(startperpline, startline)
 
     #Step 4: define the perpendicular line for the end point of the mid_height contour (100 m buffer intersection line with the midalt contour)
-    endpnt = "in_memory\\endpnt"
+    endpnt = temp_workspace + "\\endpnt"
     arcpy.FeatureVerticesToPoints_management(cont, endpnt, "END")
 
     arcpy.Buffer_analysis(endpnt, tmpbuf, "100 Meters")
@@ -476,13 +382,6 @@ def plan_closISE(cirqueDEM, midaltcontur): ##, startline, endline):
     endy = pntYArr[1]
 
     end_angle = line_direction((endpnt2x, endpnt2y), (endx, endy))
-    #arcpy.AddMessage("end_angle is: " + str(end_angle))
-
-
-    #endperpline = "in_memory\\endperpline"
-    #extend_line((endpnt2x, endpnt2y), (endx, endy), 20000, cont, endperpline)
-    ##Copy endline
-    #arcpy.CopyFeatures_management(endperpline, endline)
 
     #Step 5: Get the intersection point between the two perplines
     intersect_result = line_intersection(((startx,starty), (startpnt2x, srartpnt2y)), ((endpnt2x, endpnt2y), (endx, endy)))
@@ -566,10 +465,7 @@ arcpy.env.overwriteOutput = True #every new created file with the same name as a
 arcpy.env.XYTolerance= "1 Meters"
 arcpy.env.scratchWorkspace=arcpy.env.scratchGDB #define a default folder/database where intermediate product will be stored
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
-
-#cellsize = arcpy.GetRasterProperties_management(InputDEM,"CELLSIZEX")
-#cellsize_int = int(float(cellsize.getOutput(0)))
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 cirques_copy = arcpy.env.scratchGDB + "\\cirques_copy"
 arcpy.CopyFeatures_management(InputCirques, cirques_copy)
@@ -718,12 +614,6 @@ else: #For ArcGIS 10
     del row, cursor
     arcpy.DeleteField_management(cirques_copy,["INSIDE_X", "INSIDE_Y"])
 
-##get the lat and long
-#wkt = "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],\
-#              PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]];\
-#              -400 -400 1000000000;-100000 10000;-100000 10000;8.98315284119522E-09;\
-#              0.001;0.001;IsHighPrecision"
-#sr = arcpy.SpatialReference(text=wkt)
 
 sr = arcpy.SpatialReference(4326) ##WGS 84
 if ArcGISPro:
@@ -780,10 +670,10 @@ CirqueID = "ID_cirque"
 with arcpy.da.UpdateCursor(cirques_copy, ["L", "W", "L_W", "SHAPE@", CirqueID]) as cursor:
     for row in cursor:
 
-        arcpy.CopyFeatures_management(row[3], "in_memory/feature")
+        arcpy.CopyFeatures_management(row[3], temp_workspace +"\\feature")
         ##Need to use the outline to determine the cirque threshold points
-        arcpy.PolygonToLine_management("in_memory/feature", "in_memory\\feature_lines")
-        thresh_p = arcpy.SpatialJoin_analysis(InputThresholds, "in_memory\\feature_lines", "in_memory\\thres", "JOIN_ONE_TO_ONE", "KEEP_COMMON", '#', "INTERSECT", "30 Meters", "#")
+        arcpy.PolygonToLine_management(temp_workspace +"\\feature", temp_workspace + "\\feature_lines")
+        thresh_p = arcpy.SpatialJoin_analysis(InputThresholds, temp_workspace + "\\feature_lines", temp_workspace + "\\thres", "JOIN_ONE_TO_ONE", "KEEP_COMMON", '#', "INTERSECT", "30 Meters", "#")
         n_thresholds = arcpy.GetCount_management(thresh_p)#checking that there is only one intersection
         count=int(n_thresholds.getOutput(0)) #checking that there is only one intersection
         #arcpy.AddMessage("The number of threshold points: " + str(count))
@@ -792,7 +682,7 @@ with arcpy.da.UpdateCursor(cirques_copy, ["L", "W", "L_W", "SHAPE@", CirqueID]) 
             ##increase the search distance
             search_dis = str(i*30) + " Meters"
             #arcpy.AddMessage(search_dis)
-            thresh_p = arcpy.SpatialJoin_analysis(InputThresholds, "in_memory\\feature_lines", "in_memory\\thres", "JOIN_ONE_TO_ONE", "KEEP_COMMON", '#', "INTERSECT", search_dis, "#")
+            thresh_p = arcpy.SpatialJoin_analysis(InputThresholds, temp_workspace + "\\feature_lines", temp_workspace + "\\thres", "JOIN_ONE_TO_ONE", "KEEP_COMMON", '#', "INTERSECT", search_dis, "#")
             n_thresholds = arcpy.GetCount_management(thresh_p)#checking that there is only one intersection
             count=int(n_thresholds.getOutput(0)) #checking that there is only one intersection
             i += 1
@@ -802,18 +692,18 @@ with arcpy.da.UpdateCursor(cirques_copy, ["L", "W", "L_W", "SHAPE@", CirqueID]) 
 
         if count > 1: ##if there are multiple thresholds, take the lowest one
             #arcpy.AddMessage("The number of threshold points: " + str(count))
-            ExtractValuesToPoints(thresh_p, InputDEM, "in_memory\\thres_with_Ele", "INTERPOLATE", "VALUE_ONLY") 
-            pntArr = arcpy.da.FeatureClassToNumPyArray("in_memory\\thres_with_Ele", "RASTERVALU")
+            ExtractValuesToPoints(thresh_p, InputDEM, temp_workspace + "\\thres_with_Ele", "INTERPOLATE", "VALUE_ONLY") 
+            pntArr = arcpy.da.FeatureClassToNumPyArray(temp_workspace + "\\thres_with_Ele", "RASTERVALU")
             elevs = np.array([item[0] for item in pntArr])
             min_elev = min(elevs)
 
-            with arcpy.da.UpdateCursor("in_memory\\thres_with_Ele", "RASTERVALU") as cursor2:
+            with arcpy.da.UpdateCursor(temp_workspace + "\\thres_with_Ele", "RASTERVALU") as cursor2:
                 for row2 in cursor2:
                     if row2[0] > min_elev: ##This step reomve the small contour lines
                         #arcpy.AddMessage("Delete one threshold lines")
                         cursor2.deleteRow()
             del cursor2, row2
-            arcpy.CopyFeatures_management("in_memory\\thres_with_Ele", thresh_p)
+            arcpy.CopyFeatures_management(temp_workspace + "\\thres_with_Ele", thresh_p)
             
         
         #if count==1:
@@ -907,14 +797,14 @@ del row, cursor
 
 arcpy.CopyFeatures_management(cirque_length, OutputLength)
 arcpy.CopyFeatures_management(cirque_width, OutputWidth)
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 
 
 ##Step 4: derive 3d statistics and hypsometry 
 arcpy.AddMessage("Step 4: Derive 3d statistics and hypsometry")
 
-midAltContur = arcpy.CreateFeatureclass_management("in_memory", "midAltContur", "POLYLINE", "","","",cirques_copy)
+midAltContur = arcpy.CreateFeatureclass_management(temp_workspace, "midAltContur", "POLYLINE", "","","",cirques_copy)
 
 #FcID = arcpy.Describe(cirques_copy).OIDFieldName
 FcID = "ID_cirque"
@@ -1107,8 +997,8 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         w = row[1]
         h = row[2]
         row[3] = pow(l*w*h, 1.0/3.0)
-        row[4] = l / h
-        row[5] = w / h
+        row[4] = l / (h + 0.001) ##to avoid the division by zero
+        row[5] = w / (h + 0.001)
 
         cursor.updateRow(row)
 
@@ -1122,7 +1012,7 @@ arcpy.CopyFeatures_management(cirques_copy, outputCirques)
 arcpy.Delete_management(contur)
 arcpy.Delete_management(cirques_copy) 
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 
 

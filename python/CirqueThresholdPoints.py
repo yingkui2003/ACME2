@@ -21,7 +21,6 @@ arcpy.env.overwriteOutput = True
 arcpy.env.XYTolerance= "0.01 Meters"
 #locale.setlocale(locale.LC_ALL,"")#sets local settings to decimals
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
 ArcGISPro = 0
 arcpy.AddMessage("The current python version is: " + str(sys.version_info[0]))
 if sys.version_info[0] == 2:  ##For ArcGIS 10, need to check the 3D and Spatial Extensions
@@ -51,6 +50,9 @@ else:
     raise Exception("Must be using Python 2.x or 3.x")
     exit()
 
+temp_workspace = "in_memory"  
+if ArcGISPro:
+    temp_workspace = "memory"
 
 def piecewise_linear(x, x0, y0, k1, k2):
     return np.piecewise(x, [x < x0], [lambda x:k1*x + y0-k1*x0, lambda x:k2*x + y0-k2*x0])
@@ -68,8 +70,8 @@ def connect_major_line_sections(line):
     #arcpy.AddMessage(lengths)
     if len(lengths) == 1:
         return line
-    startpnts = "in_memory\\startpnts"
-    endpnts = "in_memory\\endpnts"
+    startpnts = temp_workspace + "\\startpnts"
+    endpnts = temp_workspace + "\\endpnts"
     arcpy.FeatureVerticesToPoints_management(line, startpnts, "START")
     pntArray = arcpy.da.FeatureClassToNumPyArray(startpnts,["SHAPE@X", "SHAPE@Y"])
     startpntX = np.array([item[0] for item in pntArray])
@@ -91,14 +93,12 @@ def connect_major_line_sections(line):
 
             distlist.append(distance)
 
-    #arcpy.AddMessage(distlist)
     ##Find the shortest distance inorder until pntCount - 1
     ##sort the distlist from small to large
     distArr = np.array(distlist)
     indexArr = np.argsort(distArr)
-    #arcpy.AddMessage(indexArr)
 
-    connectionline = arcpy.CreateFeatureclass_management("in_memory", "connectionline","POLYLINE","","","",line)
+    connectionline = arcpy.CreateFeatureclass_management(temp_workspace, "connectionline","POLYLINE","","","",line)
     new_line_cursor = arcpy.da.InsertCursor(connectionline, ('SHAPE@'))
 
     for i in range(pntCount-1):
@@ -130,24 +130,24 @@ def connect_major_line_sections(line):
     del new_line_cursor
 
     arcpy.Append_management(connectionline, line, "NO_TEST")
-    arcpy.Dissolve_management(line, "in_memory\\line_dissolve", "", "", "SINGLE_PART")
+    arcpy.Dissolve_management(line, temp_workspace + "\\line_dissolve", "", "", "SINGLE_PART")
     ##check to delete unconnected lines
-    lineArray = arcpy.da.FeatureClassToNumPyArray("in_memory\\line_dissolve",["SHAPE@LENGTH"])
+    lineArray = arcpy.da.FeatureClassToNumPyArray(temp_workspace + "\\line_dissolve",["SHAPE@LENGTH"])
     if len(lineArray) > 1:
         #arcpy.AddMessage("Delete unconnected small line sections")
         lengths = np.array([item[0] for item in lineArray])
         #arcpy.AddMessage(lengths)
         max_length = max(lengths)
-        with arcpy.da.UpdateCursor("in_memory\\line_dissolve",("SHAPE@LENGTH")) as cursor:
+        with arcpy.da.UpdateCursor(temp_workspace + "\\line_dissolve",("SHAPE@LENGTH")) as cursor:
             for row in cursor:
                 if row[0] < max_length:
                     cursor.deleteRow()
         #delete cursors
         del row, cursor
     
-    arcpy.CopyFeatures_management("in_memory\\line_dissolve", line)
+    arcpy.CopyFeatures_management(temp_workspace + "\\line_dissolve", line)
 
-    arcpy.Delete_management ("in_memory\\line_dissolve")
+    arcpy.Delete_management (temp_workspace + "\\line_dissolve")
     arcpy.Delete_management (connectionline)
     
     return line
@@ -155,9 +155,9 @@ def connect_major_line_sections(line):
 def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
     #get the count of autopolys
     #make copies of the data to in-memory data
-    cirquepolys = "in_memory\\cirquepolys"
+    cirquepolys = temp_workspace + "\\cirquepolys"
 
-    cirquePoints = "in_memory\\cirquePoints"
+    cirquePoints = temp_workspace + "\\cirquePoints"
 
     arcpy.CopyFeatures_management(cirque_polys, cirquepolys)
 
@@ -188,7 +188,7 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
 
     b_Overlap = True ##always use the overlapped apporach
     
-    cirquePoints = arcpy.CreateFeatureclass_management("in_memory", "cirquePoints","POINT","","","",cirque_polys)
+    cirquePoints = arcpy.CreateFeatureclass_management(temp_workspace, "cirquePoints","POINT","","","",cirque_polys)
 
     if b_Overlap == False:
         ##if without cirque overlaps, can do the whole analysis without looping for each cirque polygon
@@ -205,7 +205,7 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
         arcpy.AddField_management(cirquepolys, 'ID_Cirque', 'Long', 6) ##OFID is not FID, but it is related to FID
         arcpy.CalculateField_management(cirquepolys,"ID_Cirque",str("!"+str(arcpy.Describe(cirquepolys).OIDFieldName)+"!"),"PYTHON_9.3")
 
-        joinedpoints = "in_memory\\joinedpoints"
+        joinedpoints = temp_workspace + "\\joinedpoints"
         arcpy.SpatialJoin_analysis(cirquePoints, cirquepolys, joinedpoints, "JOIN_ONE_TO_ONE", "KEEP_COMMON", '#', "INTERSECT", "1 Meters", "#")
         
         arr = arcpy.da.FeatureClassToNumPyArray(joinedpoints, 'ID_Cirque')
@@ -240,11 +240,11 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
         return cirquePoints
 
     else:
-        sel_poly = "in_memory\\sel_poly"
-        sel_outline = "in_memory\\sel_outline"
-        outline_buf = "in_memory\\outline_buf"
-        Singlepoint = "in_memory\\Singlepoint"
-        Singlepoint_ele = "in_memory\\Singlepoint_Ele"
+        sel_poly = temp_workspace + "\\sel_poly"
+        sel_outline = temp_workspace + "\\sel_outline"
+        outline_buf = temp_workspace + "\\outline_buf"
+        Singlepoint = temp_workspace + "\\Singlepoint"
+        Singlepoint_ele = temp_workspace + "\\Singlepoint_Ele"
         ##Need to loop for each cirque polygon to make sure that each cirque polygon has a threshold points
         countResult = arcpy.GetCount_management(cirquepolys)
         count = int(countResult.getOutput(0))
@@ -325,25 +325,25 @@ def CirqueThresholds (cirque_polys, dem): ##, overlap = False):
 
 def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
     ##This method determines the cirque threshold mid-points by the lower 10th percentile of the elevation of the cirque outlines
-    sel_poly = "in_memory\\sel_poly"
-    cirque_line = "in_memory\\cirque_line"
-    tmpbuf = "in_memory\\tmpbuf"
-    points = "in_memory\\points"
-    points_with_Z = "in_memory\\points_with_Z"
-    sel_points = "in_memory\\sel_points"
-    tmpline = "in_memory\\tmpline"
-    tmpline3D = "in_memory\\tmpline3D"
-    midpoint = "in_memory\\midpoint"
+    sel_poly = temp_workspace + "\\sel_poly"
+    cirque_line = temp_workspace + "\\cirque_line"
+    tmpbuf = temp_workspace + "\\tmpbuf"
+    points = temp_workspace + "\\points"
+    points_with_Z = temp_workspace + "\\points_with_Z"
+    sel_points = temp_workspace + "\\sel_points"
+    tmpline = temp_workspace + "\\tmpline"
+    tmpline3D = temp_workspace + "\\tmpline3D"
+    midpoint = temp_workspace + "\\midpoint"
 
     ##Obtain the cellsize of the DEM
     dem = arcpy.Raster(InputDEM)
     cellsize = dem.meanCellWidth
     #arcpy.AddMessage("Cell size: " + str(cellsize))
 
-    cirquePoints = arcpy.CreateFeatureclass_management("in_memory", "cirquePoints","POINT","","","",InputCirques)
+    cirquePoints = arcpy.CreateFeatureclass_management(temp_workspace, "cirquePoints","POINT","","","",InputCirques)
     arcpy.AddField_management(cirquePoints, 'ID_cirque', 'Long', 6) ##OFID is not FID, but it is related to FID
 
-    cirqueThresholds = arcpy.CreateFeatureclass_management("in_memory", "cirqueThresholds","POLYLINE","","","",InputCirques)
+    cirqueThresholds = arcpy.CreateFeatureclass_management(temp_workspace, "cirqueThresholds","POLYLINE","","","",InputCirques)
     arcpy.AddField_management(cirqueThresholds, 'ID_cirque', 'Long', 6) ##OFID is not FID, but it is related to FID
     
 
@@ -382,10 +382,10 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
         ##Method 1: use the raster functions to get the cirque outlines within the lower elevations
         outCon = Con(cirqueDTM < cutoff_elev, 1)
         OutBndCln = BoundaryClean(outCon)
-        arcpy.conversion.RasterToPolygon(OutBndCln, "in_memory\\OutBndCln_poly")
-        arcpy.analysis.Clip(cirque_line, "in_memory\\OutBndCln_poly", tmpline)
-        arcpy.MultipartToSinglepart_management(tmpline, "in_memory\\tmpline_singlePart")
-        arcpy.Dissolve_management("in_memory\\tmpline_singlePart", tmpline, "", "", "SINGLE_PART")
+        arcpy.conversion.RasterToPolygon(OutBndCln, temp_workspace + "\\OutBndCln_poly")
+        arcpy.analysis.Clip(cirque_line, temp_workspace + "\\OutBndCln_poly", tmpline)
+        arcpy.MultipartToSinglepart_management(tmpline, temp_workspace + "\\tmpline_singlePart")
+        arcpy.Dissolve_management(temp_workspace + "\\tmpline_singlePart", tmpline, "", "", "SINGLE_PART")
 
         ##test if there are more line sections
         lineArray = arcpy.da.FeatureClassToNumPyArray(tmpline,["SHAPE@LENGTH"])
@@ -393,97 +393,17 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
             cutoff_elev = np.percentile(Elevs, 25) 
             outCon = Con(cirqueDTM < cutoff_elev, 1)
             OutBndCln = BoundaryClean(outCon)
-            arcpy.conversion.RasterToPolygon(OutBndCln, "in_memory\\OutBndCln_poly")
-            arcpy.analysis.Clip(cirque_line, "in_memory\\OutBndCln_poly", tmpline)
-            arcpy.MultipartToSinglepart_management(tmpline, "in_memory\\tmpline_singlePart")
-            arcpy.Dissolve_management("in_memory\\tmpline_singlePart", tmpline, "", "", "SINGLE_PART")
+            arcpy.conversion.RasterToPolygon(OutBndCln, temp_workspace + "\\OutBndCln_poly")
+            arcpy.analysis.Clip(cirque_line, temp_workspace + "\\OutBndCln_poly", tmpline)
+            arcpy.MultipartToSinglepart_management(tmpline, temp_workspace + "\\tmpline_singlePart")
+            arcpy.Dissolve_management(temp_workspace + "\\tmpline_singlePart", tmpline, "", "", "SINGLE_PART")
             
         if len(lineArray) > 1:
             #arcpy.AddMessage("multiple lines created, need to connect the lines")
             ##only connected major lines
             ##remove the small lines
             connect_major_line_sections(tmpline)
-            '''
-            ##only keep the longest line section
-            lengths = np.array([item[0] for item in lineArray])
-            arcpy.AddMessage(lengths)
-            if len(lengths) > 1:
-                max_length = max(lengths)
-                with arcpy.da.UpdateCursor(tmpline,("SHAPE@LENGTH")) as cursor:
-                    for row in cursor:
-                        if row[0] < max_length:
-                            cursor.deleteRow()
-                #delete cursors
-                del row, cursor
-            '''
-        ##Check the slopes along the line
-        ##use filled DEM and 3*cellsize as spacing; save the 3d feature as one output: out3DProfiles
-        #arcpy.CopyFeatures_management(tmpline, "d:\\temp\\tmpline.shp")
-        
-        '''       
-        arcpy.InterpolateShape_3d(dem, tmpline, tmpline3D, cellsize*3)
-        arcpy.FeatureVerticesToPoints_management(tmpline3D, points, "ALL")
-        pntArray = arcpy.da.FeatureClassToNumPyArray(points,["SHAPE@X", "SHAPE@Y", "SHAPE@Z"])
-        pntX = np.array([item[0] for item in pntArray])
-        pntY = np.array([item[1] for item in pntArray])
-        pntZ = np.array([item[2] for item in pntArray])
-        #arcpy.AddMessage(str(len(pntX)))
 
-        maxZ = max(pntZ)
-        minZ = min(pntZ)
-        Z_range = maxZ - minZ
-        Z_interval = 5 ##5 m interval to divide Z
-        numZ = int(Z_range / Z_interval) 
-        widthList = []
-        ZList = []
-        for i in range(numZ):
-            Z = maxZ - i * Z_interval
-            selX = pntX[pntZ < Z]
-            selY = pntY[pntZ < Z]
-            width = Dist(selX[0], selY[0], selX[-1], selY[-1])
-            widthList.append(width)
-            ZList.append(Z)
-        
-        #arcpy.AddMessage(ZList)
-        #arcpy.AddMessage(widthList)
-
-        x = np.array(ZList)
-        y = np.array(widthList)
-        try:
-            p , e = optimize.curve_fit(piecewise_linear, x, y)
-            #arcpy.AddMessage(p)
-            #arcpy.AddMessage(e[0][0])
-            if str(e[0][0]) != "inf":
-                ##Use the elevation turning point to determine the threshold
-                turn_Z = p[0]
-                ##Find the point X and Y with the elevation < turn_Z+1
-                selX = pntX[pntZ < turn_Z+1]
-                selY = pntY[pntZ < turn_Z+1]
-                #selZ = pntZ[pntZ < turn_Z+1]
-                ##turn the XY points into a line feature
-                #XYArr = np.column_stack([selX, selY, selZ])
-                #arcpy.AddMessage(feature_info)
-                #field = "Elev"
-                startX = selX[0:-1]
-                endX = selX[1:]
-                startY = selY[0:-1]
-                endY = selY[1:]
-
-                new_line = arcpy.CreateFeatureclass_management("in_memory", "new_line","POLYLINE", "","","", tmpline)
-                new_line_cursor = arcpy.da.InsertCursor(new_line, ('SHAPE@'))
-
-                for i in range(len(startX)):
-                    array = arcpy.Array([arcpy.Point(startX[i],startY[i]),arcpy.Point(endX[i], endY[i])])
-                    polyline = arcpy.Polyline(array)
-                    new_line_cursor.insertRow([polyline])
-
-                del new_line_cursor
-
-                arcpy.Dissolve_management(new_line, tmpline, "", "", "SINGLE_PART")
-                arcpy.Delete_management(new_line)    
-        except:
-            pass
-        '''
         ##Get the center points of the tmpline
         arcpy.FeatureVerticesToPoints_management(tmpline, midpoint, "MID")
 
@@ -518,9 +438,9 @@ def CirqueThresholds_midpoints(InputCirques, InputDEM):####, percentile):
     arcpy.Delete_management (sel_points)
     arcpy.Delete_management (tmpline)
     arcpy.Delete_management (midpoint)
-    arcpy.Delete_management ("in_memory\\OutBndCln_poly")
-    arcpy.Delete_management ("in_memory\\OutBndCln_poly")
-    arcpy.Delete_management ("in_memory\\tmpline_singlePart")
+    arcpy.Delete_management (temp_workspace + "\\OutBndCln_poly")
+    arcpy.Delete_management (temp_workspace + "\\OutBndCln_poly")
+    arcpy.Delete_management (temp_workspace + "\\tmpline_singlePart")
     
     return cirquePoints, cirqueThresholds
 
@@ -533,7 +453,7 @@ InputDEM = arcpy.GetParameterAsText(1)
 method = arcpy.GetParameterAsText(2)
 OutputCirques = arcpy.GetParameterAsText(3)
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 ##make sure the projection of the input datasets is the same projected projection 
 spatial_ref_cirques = arcpy.Describe(InputCirques).spatialReference
@@ -569,7 +489,7 @@ else:
     
 arcpy.CopyFeatures_management(result_threshold_midpoints, OutputCirques)
 
-arcpy.Delete_management("in_memory") ### Empty the in_memory
+arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
 
 
