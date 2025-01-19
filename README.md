@@ -1,4 +1,4 @@
-# Updattes (1/19/2025)
+# Updates (1/19/2025)
 (1) Fixed some errors in the curve fitting
 (2) Add a new metric, Asp_strength, for the vector strength of the aspects of all pixels within a cirque
 (3) Add three metrics (L_NormExp_A, L_NormExp_B, L_NormExp_R2) for the exponential function fitting of the length profile based on standardized X-Y values. 
