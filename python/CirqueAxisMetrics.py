@@ -84,13 +84,13 @@ def k_curve_fit(x, y):
     popt, pcov = curve_fit(k_curve, x, y)
     c = popt[0]
     # r-squared
-    yhat = k_curve(x, c)             # or [p(z) for z in x]
-    ybar = np.sum(y)/len(y)          # or sum(y)/len(y)
-    ssreg = np.sum((yhat-ybar)**2)   # or sum([ (yihat - ybar)**2 for yihat in yhat])
-    sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
-    R2 = ssreg / sstot
-    if R2 > 1:
-        R2 = 1/R2
+    yfit = k_curve(x, c)             # or [p(z) for z in x]
+    ymean = np.sum(y)/len(y)          # or sum(y)/len(y)
+    residuals = y - yfit
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((y-ymean)**2)
+    R2 = 1 - (ss_res / ss_tot)
+
     return (c, R2)
 
 ##define normalized exp fit norm_y = a * exp(b*normx)
@@ -403,9 +403,11 @@ with arcpy.da.SearchCursor(temp_workspace + "\\length3D", ["ID_Cirque","SHAPE@",
         fit_results = k_curve_fit(normalLen, normalH)
         c = fit_results[0]
         R2 = fit_results[1]
-
+        #arcpy.AddMessage(fit_results)
+    
         L_Kcurv_C_list.append(c)
         L_Kcurv_R2_list.append(R2)
+
         
         i += 1
         arcpy.AddMessage("Finished cirque #" + str(i))

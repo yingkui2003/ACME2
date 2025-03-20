@@ -81,7 +81,7 @@ def polyfit(x, y, degree):
 
 def k_curve (x, c):
     return (1-x) * np.exp(c * x)
-
+'''
 # normalized K_curve Regression
 def k_curve_fit(x, y):
     popt, pcov = curve_fit(k_curve, x, y)
@@ -95,6 +95,21 @@ def k_curve_fit(x, y):
     if R2 > 1:
         R2 = 1/R2
     return (c, R2)
+'''
+# normalized K_curve Regression
+def k_curve_fit(x, y):
+    popt, pcov = curve_fit(k_curve, x, y)
+    c = popt[0]
+    # r-squared
+    yfit = k_curve(x, c)             # or [p(z) for z in x]
+    ymean = np.sum(y)/len(y)          # or sum(y)/len(y)
+    residuals = y - yfit
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((y-ymean)**2)
+    R2 = 1 - (ss_res / ss_tot)
+
+    return (c, R2)
+
 
 #---------------------------------------------------------------------------------------------------------------
 # This function calculates the distance between two points
