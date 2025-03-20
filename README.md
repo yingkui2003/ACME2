@@ -1,3 +1,6 @@
+# Updates (3/20/2025)
+Fix some issues related to K_curve function.
+
 # Updates (1/19/2025)
 (1) Fixed some errors in the curve fitting
 
