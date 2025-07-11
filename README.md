@@ -1,4 +1,4 @@
-# How to download and use this toolbox in ArcGIS or ArcGIS Pro
+# How to download and use the ACME2 toolbox in ArcGIS or ArcGIS Pro
 The github site includes the ACME2 toolbox (ACME2.atbx) for ArcGIS Pro, an older tbx version of the toolbox for ArcGIS Pro 2.8 or newer (ACME2.tbx), and an tbx toolbox for ArcGIS 10.8 or newer (ACME2_for_ArcMap.tbx), and a python folder, including all python source codes associated with these tools. A test data folder is also included for the test of this toolbox. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
 
 <img width="821" height="395" alt="image" src="https://github.com/user-attachments/assets/f1292589-f4c6-4c6a-9d17-3d3e1932ab5a" />
