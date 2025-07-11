@@ -1,13 +1,13 @@
 # How to download and use this toolbox in ArcGIS or ArcGIS Pro
-The github site includes the ACME2 toolbox (ACME2.atbx) for ArcGIS Pro, an older tbx version of the toolbox for ArcGIS Pro 2.8 or newer (ACME2.tbx), and an tbx toolbox for ArcGIS 10.8 or newer (ACME2_for_ArcMap.tbx), and a python folder, including all python source codes associated with these tools. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
+The github site includes the ACME2 toolbox (ACME2.atbx) for ArcGIS Pro, an older tbx version of the toolbox for ArcGIS Pro 2.8 or newer (ACME2.tbx), and an tbx toolbox for ArcGIS 10.8 or newer (ACME2_for_ArcMap.tbx), and a python folder, including all python source codes associated with these tools. A test data folder is also included for the test of this toolbox. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
 
 <img width="821" height="395" alt="image" src="https://github.com/user-attachments/assets/f1292589-f4c6-4c6a-9d17-3d3e1932ab5a" />
 
 
 
-A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with the three tbx and atbx files, the python folder with source code files, and a TestData folder for the test datasets. The user can use the toolboxes, check the codes, and comtinue imporving this tools. Note that the codes for each tool are not imported into the atbx toolbox yet, so that the atbx toolbox cannot be run just with the tbx file only. The two tbx toolboxes are imported with the codes; thus, they can be used without the code files.  
+A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME2-main folder with the three tbx and atbx files, the python folder with source code files, and a TestData folder for the test datasets. The user can use the toolboxes, check the codes, and comtinue imporving this tools. Note that the code for each tool has already been imported into the toolbox files, so that each toolbox can run without the python file.  
 
-The toolboxes and tools have been tested in from ArcGIS 10.7, 10.8, ArcGIS Pro 2.8 to 3.1. Errors may occur if using other versions of ArcGIS 10 or ArcGIS Pro.  
+The toolboxes and tools have been tested in from ArcGIS 10.8 or newer, ArcGIS Pro 2.8 to 3.5. Errors may occur if using other versions of ArcGIS 10 or ArcGIS Pro.  
 
 Please report any errors or questions to Yingkui Li (yli32@utk.edu).
 
