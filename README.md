@@ -1,5 +1,9 @@
+# Updates (7/10/2025)
+Fixed the link source code errors of the toolbox for ArcMap and old ArcGIS Pro versions (tbx) and added two new metrics, Volume and depth, based on Telbisz et al. (2025).
+Telbisz, T., Krasznai, M., Gachev, E., Gikov, A., Ruszkiczay-Rüdiger, Z., 2025. Cirque morphometry of Rila and Pirin Mountains (Bulgaria). Geomorphology 483, 109819. https://doi.org/10.1016/j.geomorph.2025.109819
+
 # Updates (3/20/2025)
-Fix some issues related to K_curve function.
+Fixed some issues related to K_curve function.
 
 # Updates (1/19/2025)
 (1) Fixed some errors in the curve fitting
