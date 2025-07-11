@@ -475,6 +475,7 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
         try:
             fid = FID_list.index(row[0])
             #arcpy.AddMessage("fid is " + str(fid))
+            '''
             row[1] = P_clos_list[fid]
             row[2] = HLHI_list[fid]
             row[3] = HLAsp_list[fid]
@@ -492,7 +493,24 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
             row[13] = L_NormExp_A_list[fid]
             row[14] = L_NormExp_B_list[fid]
             row[15] = L_NormExp_R2_list[fid]
-            
+            '''
+            row[1] = f'{P_clos_list[fid]:.2f}'
+            row[2] = f'{HLHI_list[fid]:.3f}'
+            row[3] = f'{HLAsp_list[fid]:.2f}'
+            row[4] = f'{Amplitude_list[fid]:.1f}'
+            row[5] = f'{Axgrad_list[fid]:.1f}'
+
+            row[6] = f'{L_Exp_A_list[fid]:.3f}'
+            row[7] = f'{L_Exp_B_list[fid]:.3f}'
+            row[8] = f'{L_Exp_R2_list[fid]:.3f}'
+            row[9] = f'{L_Kcurv_C_list[fid]:.4f}'
+            row[10] = f'{L_Kcurv_R2_list[fid]:.3f}'
+            row[11] = f'{W_Quad_C_list[fid]:.4f}'
+            row[12] = f'{W_Quad_R2_list[fid]:.3f}'
+             
+            row[13] = f'{L_NormExp_A_list[fid]:.3f}'
+            row[14] = f'{L_NormExp_B_list[fid]:.3f}'
+            row[15] = f'{L_NormExp_R2_list[fid]:.3f}'            
             #update cursor
             cursor.updateRow(row)
         except:

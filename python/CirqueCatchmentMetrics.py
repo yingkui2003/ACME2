@@ -66,15 +66,10 @@ arcpy.env.scratchWorkspace=arcpy.env.scratchGDB #define a default folder/databas
 
 arcpy.Delete_management(temp_workspace) ### Empty the in_memory
 
-#cellsize = arcpy.GetRasterProperties_management(InputDEM,"CELLSIZEX")
-#cellsize_int = int(float(cellsize.getOutput(0)))
 ##Obtain the cellsize of the DEM
 dem = arcpy.Raster(InputDEM)
 cellsize = dem.meanCellWidth
 cellsize_int = int(cellsize)
-
-#cirques_copy = arcpy.env.scratchGDB + "\\cirques_copy"
-#arcpy.CopyFeatures_management(InputCirques, cirques_copy)
 
 #a "list" where the name of fields from the attributed table are copied in
 Fieldlist=[]
@@ -104,9 +99,6 @@ arcpy.AddMessage("----Deriving the upstream catchment for each cirque")
 fillDEM =Fill(InputDEM)  ##Fill the sink first
 fdir = FlowDirection(fillDEM,"NORMAL") ##Flow direction
 facc = FlowAccumulation(fdir) ##Flow accmulation
-
-#No_Overlap = False ##Also use the one by one method to prevent the potential issues with cirque overlaps
-#cirque_thresholds = CirqueThresholdsFcc (cirques_copy, facc, No_Overlap)
 
 ##Derive the streams and cross sections for cirque thresholds
 Singlepoint = temp_workspace + "\\Singlepoint"
@@ -138,7 +130,6 @@ StreamToFeature(outStreamLink, fdir, TmpStream, "SIMPLIFY")
 ZonalStatisticsAsTable(outStreamLink, "VALUE", facc, MaxFccTable, "DATA", "MAXIMUM")
 # Process: Join Field
 arcpy.JoinField_management(TmpStream, "grid_code", MaxFccTable, "Value", "MAX")  ##Join to get the flow accumulation value
-
 
 ##Convert cirque outline polygon to polylines
 cirque_lines = temp_workspace + "\\cirque_lines"
@@ -226,19 +217,12 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
         #arcpy.Dissolve_management(selWs, temp_workspace + "\\dissolve_selWs")
         #try:
         query = "ID_cirque = "+ str(row[6])
-        #arcpy.AddMessage(query)
         arcpy.Select_analysis(TotalWS, selWs, query)
-        #arcpy.CopyFeatures_management(selWs, "d:\\temp\\selws.shp")
         
         arr = arcpy.da.FeatureClassToNumPyArray(selWs, "SHAPE@AREA")
         areas = np.array([item[0] for item in arr])
-        #arcpy.AddMessage(areas)
         area = max(areas) ##only choose the maximum area
-        #arcpy.AddMessage(str(area))
         WsDTM = ExtractByMask(InputDEM, selWs) ##shape@
-        #WsDTM_max = arcpy.GetRasterProperties_management(WsDTM, "MAXIMUM")
-        #maxabalt = int(float(WsDTM_max.getOutput(0)))
-        #arcpy.AddMessage(str(maxabalt))
 
         maxabalt = int(float(WsDTM.maximum))
         if maxabalt < row[2]: ##in case the maxabalt is smaller than the Z_max from the cirque outline
@@ -271,16 +255,13 @@ with arcpy.da.UpdateCursor(InputCirques, fields) as cursor:
                     ##Get the total areas with mean > Z_mean 
                     with arcpy.da.SearchCursor(temp_workspace + "\\ws_leftover_singleParts", ['SHAPE@AREA', 'MEAN']) as cursor3:  ##outline_cp is the outmost simplified outlines
                         for row3 in cursor3:
-                            #arcpy.AddMessage("Mean is: " + str(row3[1]))
                             try:
                                 if row3[1] > mean_ele: 
                                     ab_area += row3[0]    
                             except:
-                                #arcpy.AddMessage("Mean is: " + str(row3[1]))
                                 pass
                     del row3, cursor3
-            #arcpy.AddMessage(str(ab_area))
-            row[5] = row[1]/(row[1]+ab_area)*100
+            row[5] = f'{row[1]/(row[1]+ab_area)*100:.2f}'
 
         #update cursor
         cursor.updateRow(row)

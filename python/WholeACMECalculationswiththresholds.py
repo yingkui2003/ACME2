@@ -632,6 +632,14 @@ for field in new_fields:
     else:
         arcpy.AddField_management(cirques_copy, field, "LONG",10)
 
+##Volume and depth ##Added 7/10/2025
+new_fields = ("Volume","Depth") ##All Integer variables count = 7
+for field in new_fields:
+    if field in Fieldlist:
+        pass
+    else:
+        arcpy.AddField_management(cirques_copy, field, "DOUBLE",15, 1)
+
 ##Shape variables
 new_fields = ("L_W","L_H","W_H","A3D_A2D","Circular") ##All float variables count = 5
 for field in new_fields:
@@ -750,10 +758,10 @@ if ArcGISPro:
     method = "User-specified"
     with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         for row in cursor:
-           row[1] = row[0]/1000 ##Convert to km
-           row[3] = row[2]/1000 ##Convert to km
+           row[1] = f'{row[0]/1000:.2f}' ##Convert to km
+           row[3] = f'{row[2]/1000:.2f}' ##Convert to km
            row[4] = spatial_ref.name
-           row[5] = cellsize
+           row[5] = f'{cellsize:.1f}'
            row[6] = method
            cursor.updateRow(row)
     del row, cursor
@@ -765,10 +773,10 @@ else: #For ArcGIS 10
     method = "User-specified"
     with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         for row in cursor:
-           row[1] = row[0]/1000 ##Convert to km
-           row[3] = row[2]/1000 ##Convert to km
+           row[1] = f'{row[0]/1000:.2f}' ##Convert to km
+           row[3] = f'{row[2]/1000:.2f}' ##Convert to km
            row[4] = spatial_ref.name
-           row[5] = cellsize
+           row[5] = f'{cellsize:.1f}'
            row[6] = method
            cursor.updateRow(row)
     del row, cursor
@@ -782,8 +790,8 @@ else: ##For ArcGIS 10
     fields = ("INSIDE_X", "Lon", "INSIDE_Y", "Lat")
     with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         for row in cursor:
-           row[1] = row[0]
-           row[3] = row[2]
+           row[1] = f'{row[0]:.4f}'
+           row[3] = f'{row[2]:.4f}'
            cursor.updateRow(row)
     del row, cursor
     arcpy.DeleteField_management(cirques_copy,["INSIDE_X", "INSIDE_Y"])
@@ -808,7 +816,7 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
     for row in cursor:
        row[0]=row[3]
        row[1]=row[4]
-       row[2]=row[3]/(2*math.pi*((math.sqrt(row[4]/math.pi))))
+       row[2]=f'{row[3]/(2*math.pi*((math.sqrt(row[4]/math.pi)))):.3f}'
        cursor.updateRow(row)
 del row, cursor
 
@@ -942,7 +950,7 @@ with arcpy.da.UpdateCursor(cirques_copy, ["L", "W", "L_W", "SHAPE@", CirqueID]) 
         row[1]=int(WIDTH.length)
 
         #calculate L/W
-        row[2]=row[0]/row[1]
+        row[2]=f'{row[0]/row[1]:.3f}'
 
         #update rows content so that it is permanently stored
         cursor.updateRow(row)
@@ -967,7 +975,9 @@ midAltContur = arcpy.CreateFeatureclass_management(temp_workspace, "midAltContur
 #FcID = arcpy.Describe(cirques_copy).OIDFieldName
 FcID = "ID_cirque"
 
-fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_closISE", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33", "Plan_closSPA", "A2D", "Asp_strength")
+fields = ("SHAPE@", "Z_min","Z_max","H","Z_mean","A3D","Slope_mean", "Aspectmean", "Plan_closISE", "Z_mid", "A3D_A2D", "Hypsomax", "HI","Prof_clos", FcID, 
+         "Z_median", "Asp_east","Asp_north", "Slope_max", "Slope_min", "Slpgt33","Slplt20","Slp20to33", "Plan_closSPA", "A2D", "Asp_strength", "Depth", "Volume")
+
 volumetable = arcpy.env.scratchFolder + "\\volumetable.txt"
 contur = arcpy.env.scratchGDB + "\\contur"
 #startline = arcpy.env.scratchGDB + "\\startline"
@@ -987,69 +997,45 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         cirqueASPECT_rad = (cirqueASPECT * math.pi / 180)
         cirqueASPECT_sin = Sin (cirqueASPECT_rad)
         cirqueASPECT_cos = Cos (cirqueASPECT_rad)
-        #DTM_min = arcpy.GetRasterProperties_management(cirqueDTM, "MINIMUM")
-        #row[1] = int(float(DTM_min.getOutput(0)))
+
         row[1] = int(cirqueDTM.minimum)
-        #DTM_max = arcpy.GetRasterProperties_management(cirqueDTM, "MAXIMUM")
-        #row[2] = int(float(DTM_max.getOutput(0)))
         row[2] = int(cirqueDTM.maximum)
         row[3] = (row[2]-row[1])
         row[9] = (row[2]+row[1])/2 ##Middle elevation
-        #DTM_mean = arcpy.GetRasterProperties_management(cirqueDTM, "MEAN")
-        #row[4] = DTM_mean.getOutput(0)
         row[4] = cirqueDTM.mean
         
-        #SLOPE_mean = arcpy.GetRasterProperties_management(cirqueSLOPE, "MEAN")
-        #row[6] = SLOPE_mean.getOutput(0)
-        row[6] = cirqueSLOPE.mean
-        row[18] = cirqueSLOPE.maximum
-        row[19] = cirqueSLOPE.minimum
+        row[6] = f'{cirqueSLOPE.mean:.2f}'
+        row[18] = f'{cirqueSLOPE.maximum:.2f}'
+        row[19] = f'{cirqueSLOPE.minimum:.2f}'
         
-        #SLOPE_max = arcpy.GetRasterProperties_management(cirqueSLOPE, "MAXIMUM")
-        #SLOPE_min = arcpy.GetRasterProperties_management(cirqueSLOPE, "MINIMUM")
-        #row[13] = float(SLOPE_max.getOutput(0)) - float(SLOPE_min.getOutput(0))
-        row[13] = float(cirqueSLOPE.maximum) - float(cirqueSLOPE.minimum)
+        row[13] = f'{float(cirqueSLOPE.maximum) - float(cirqueSLOPE.minimum):.2f}'
         
-        #ASPECT_sin_mean = arcpy.GetRasterProperties_management(cirqueASPECT_sin, "MEAN")
-        #ASPECT_sin_mean_value = float(ASPECT_sin_mean.getOutput(0))
         ASPECT_sin_mean_value = cirqueASPECT_sin.mean
-        
-        #ASPECT_cos_mean = arcpy.GetRasterProperties_management(cirqueASPECT_cos, "MEAN")
-        #ASPECT_cos_mean_value = float(ASPECT_cos_mean.getOutput(0))
         ASPECT_cos_mean_value = cirqueASPECT_cos.mean
         
         radians_aspect = math.atan (ASPECT_sin_mean_value/ASPECT_cos_mean_value)
         if  ASPECT_sin_mean_value  > 0 and ASPECT_cos_mean_value > 0 :
             degree_aspect = radians_aspect * 180/math.pi
-            row[7] = degree_aspect
+            row[7] = f'{degree_aspect:.1f}'
             sin_radians_aspect = math.sin(radians_aspect)
             cos_radians_aspect = math.cos(radians_aspect)
-            #row [7] = float((math.atan (ASPECT_sin_mean_value/ASPECT_cos_mean_value))*180/math.pi)
         elif ASPECT_cos_mean_value < 0 :
             degree_aspect = (radians_aspect + math.pi) * 180/math.pi
-            row[7] = degree_aspect
+            row[7] = f'{degree_aspect:.1f}'
             sin_radians_aspect = math.sin(radians_aspect + math.pi)
             cos_radians_aspect = math.cos(radians_aspect + math.pi)
-            
-            #row [7] = float(((math.atan (ASPECT_sin_mean_value/ASPECT_cos_mean_value))*180/math.pi)+180)
         else:
             degree_aspect = (radians_aspect + 2* math.pi) * 180/math.pi
-            row[7] = degree_aspect
+            row[7] = f'{degree_aspect:.1f}'
             sin_radians_aspect = math.sin(radians_aspect + 2 * math.pi)
             cos_radians_aspect = math.cos(radians_aspect + 2 * math.pi)
             
-            #row [7] = float(((math.atan (ASPECT_sin_mean_value/ASPECT_cos_mean_value))*180/math.pi)+360)
-        #arcpy.AddMessage("Aspect_sin_mean new: " + str(sin_radians_aspect))
-        #arcpy.AddMessage("Aspect_cos_mean new: " + str(cos_radians_aspect))
-        row[16] = sin_radians_aspect
-        row[17] = cos_radians_aspect
+        row[16] = f'{sin_radians_aspect:.3f}'
+        row[17] = f'{cos_radians_aspect:.3f}'
 
         ##derive the vector strength (R) or variance (1-R) of the aspect ##10/11/2024
         aspect_R = math.sqrt(ASPECT_sin_mean_value * ASPECT_sin_mean_value + ASPECT_cos_mean_value * ASPECT_cos_mean_value)
-        #aspect_var = 1.0 - aspect_R
-        #arcpy.AddMessage("Aspect_strength: " + str(aspect_R))
-        row[25] = aspect_R
-
+        row[25] = f'{aspect_R:.3f}'
 
         try:
             result = plan_closISE(cirqueDTM, contur) ####, startline, endline)
@@ -1058,7 +1044,7 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
             #row[4] = result[2] ##EndAngle
             #row[5] = result[3] ##AngType
             #row[6] = result[4] ##Flag
-            row[8]= planclosISE
+            row[8]= f'{planclosISE:.2f}'
             arcpy.Append_management(contur, midAltContur, "NO_TEST")
         except:
             arcpy.AddMessage("There is an error to derive the plan_closISE!")
@@ -1067,7 +1053,7 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         ##Plan_closSPA
         try:
             angle = plan_closSPA(cirqueDTM)
-            row[23]= angle
+            row[23]= f'{angle:.2f}'
         except:
             arcpy.AddMessage("There is an error to derive the plan_closSPA!")
             pass            
@@ -1096,10 +1082,15 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         ##Step 3: Assign the values to the attibute fields
         row[5] = area_3D
         #row[9] = area_2D
-        row[10] = Ratio3D2D
+        row[10] = f'{Ratio3D2D:.3f}'
         ##Step 4: make sure to delete volumetable, so that it only has one record for the corresponding cirque outline
         arcpy.Delete_management(volumetable)
 
+        ##Adjust Area3D based on the A3D/A2D ratio and vector A2D to be consistent with the ratio
+        A2D = row[24]
+        adjusted_area_3D = A2D *Ratio3D2D
+        row[5] = adjusted_area_3D
+ 
         ##Calcualte the Hypsometric max and Hypsometric intergal
         array = arcpy.RasterToNumPyArray(cirqueDTM,"","","",int_min_elev)
         EleArr = array[array > int_min_elev].astype(int) ##Get the elevations greater than zero
@@ -1110,7 +1101,7 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         row[15] = Z_median 
 
         Hi = (Z_mean - Z_min) / (Z_max - Z_min)
-        row[12] = Hi
+        row[12] = f'{Hi:.3f}'
         
         vals,counts = np.unique(EleArr, return_counts=True)
         index = np.argmax(counts)
@@ -1126,9 +1117,23 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         slpgt33 = len(slpgt33Arr)
         slplt20Arr = slpArr[slpArr < 20].astype(float) ##Get the slope less than 20 degree
         slplt20 = len(slplt20Arr)
-        row[20] = slpgt33 / total * 100 ##the percent of slope > 33 degree 
-        row[21] = slplt20 / total * 100 ##the percent of slope < 20 degree 
-        row[22] = (total - slpgt33 - slplt20) / total * 100        ##the percent of 20< slope < 33 degree
+        row[20] = f'{slpgt33 / total * 100:.2f}' ##the percent of slope > 33 degree 
+        row[21] = f'{slplt20 / total * 100:.2f}' ##the percent of slope < 20 degree 
+        row[22] = f'{(total - slpgt33 - slplt20) / total * 100:.2f}'        ##the percent of 20< slope < 33 degree
+
+        ##Derive the volume and mean depth; added 7/10/2025
+        arcpy.InterpolateShape_3d(InputDEM, row[0], temp_workspace +"\\feature3d")
+        arcpy.FeatureVerticesToPoints_management(temp_workspace +"\\feature3d", temp_workspace + "\\feature3dpoints", "All")
+        arcpy.NaturalNeighbor_3d(temp_workspace + "\\feature3dpoints", "Shape.Z", temp_workspace + "\\surface3d", cellsize)
+
+        diff = Raster(temp_workspace + "\\surface3d") - cirqueDTM
+        adj_diff = Con(diff > 0, diff, 0)
+
+        meandepth = adj_diff.mean
+        ##mean depth
+        row[26]= f'{meandepth:.2f}'
+        ##Volume
+        row[27]= f'{meandepth * A2D:.0f}'
 
         #update cursor
         cursor.updateRow(row)
@@ -1148,8 +1153,8 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         w = row[1]
         h = row[2]
         row[3] = pow(l*w*h, 1.0/3.0)
-        row[4] = l / (h + 0.001) ##to avoid the division by zero
-        row[5] = w / (h + 0.001)
+        row[4] = f'{l / (h + 0.001):.3f}' ##to avoid the division by zero
+        row[5] = f'{w / (h + 0.001):.3f}'
 
         cursor.updateRow(row)
 
@@ -1429,6 +1434,7 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
         try:
             fid = FID_list.index(row[0])
             #arcpy.AddMessage("fid is " + str(fid))
+            '''
             row[1] = P_clos_list[fid]
             row[2] = HLHI_list[fid]
             row[3] = HLAsp_list[fid]
@@ -1446,7 +1452,24 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
             row[13] = L_NormExp_A_list[fid]
             row[14] = L_NormExp_B_list[fid]
             row[15] = L_NormExp_R2_list[fid]
- 
+            '''
+            row[1] = f'{P_clos_list[fid]:.2f}'
+            row[2] = f'{HLHI_list[fid]:.3f}'
+            row[3] = f'{HLAsp_list[fid]:.2f}'
+            row[4] = f'{Amplitude_list[fid]:.1f}'
+            row[5] = f'{Axgrad_list[fid]:.1f}'
+
+            row[6] = f'{L_Exp_A_list[fid]:.3f}'
+            row[7] = f'{L_Exp_B_list[fid]:.3f}'
+            row[8] = f'{L_Exp_R2_list[fid]:.3f}'
+            row[9] = f'{L_Kcurv_C_list[fid]:.4f}'
+            row[10] = f'{L_Kcurv_R2_list[fid]:.3f}'
+            row[11] = f'{W_Quad_C_list[fid]:.4f}'
+            row[12] = f'{W_Quad_R2_list[fid]:.3f}'
+             
+            row[13] = f'{L_NormExp_A_list[fid]:.3f}'
+            row[14] = f'{L_NormExp_B_list[fid]:.3f}'
+            row[15] = f'{L_NormExp_R2_list[fid]:.3f}' 
             #update cursor
             cursor.updateRow(row)
         except:
@@ -1637,7 +1660,8 @@ with arcpy.da.UpdateCursor(cirques_copy, fields) as cursor:
                                 pass
                     del row3, cursor3
             #arcpy.AddMessage(str(ab_area))
-            row[5] = row[1]/(row[1]+ab_area)*100
+            #row[5] = row[1]/(row[1]+ab_area)*100
+            row[5] = f'{row[1]/(row[1]+ab_area)*100:.2f}'
 
         #update cursor
         cursor.updateRow(row)
