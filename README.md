@@ -1,5 +1,5 @@
 # Updates (7/10/2025)
-Fixed the link source code errors of the toolbox for ArcMap and old ArcGIS Pro versions (tbx) and added two new metrics, Volume and depth, based on Telbisz et al. (2025).
+Fixed the link source code errors of the toolbox for ArcMap 10.8 or newer (ACME2_for_ArcMap.tbx) and old ArcGIS Pro versions (ACME2.tbx) and added two new metrics, Volume and depth, based on Telbisz et al. (2025).
 
 Telbisz, T., Krasznai, M., Gachev, E., Gikov, A., Ruszkiczay-Rüdiger, Z., 2025. Cirque morphometry of Rila and Pirin Mountains (Bulgaria). Geomorphology 483, 109819. https://doi.org/10.1016/j.geomorph.2025.109819
 
