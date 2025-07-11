@@ -1,3 +1,17 @@
+# How to download and use this toolbox in ArcGIS or ArcGIS Pro
+The github site includes the revised ACME toolbox (atbx) file and a python folder, including all python source codes associated with these tools. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
+
+![image](https://github.com/yingkui2003/ACME2/assets/24683137/9447d858-e4ca-4460-b00b-53a173717eff)
+
+
+
+A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with the three tbx and atbx files, the python folder with source code files, and a TestData folder for the test datasets. The user can use the toolboxes, check the codes, and comtinue imporving this tools. Note that the codes for each tool are not imported into the atbx toolbox yet, so that the atbx toolbox cannot be run just with the tbx file only. The two tbx toolboxes are imported with the codes; thus, they can be used without the code files.  
+
+The toolboxes and tools have been tested in from ArcGIS 10.7, 10.8, ArcGIS Pro 2.8 to 3.1. Errors may occur if using other versions of ArcGIS 10 or ArcGIS Pro.  
+
+Please report any errors or questions to Yingkui Li (yli32@utk.edu).
+
+
 # Updates (7/10/2025)
 Fixed the link source code errors of the toolbox for ArcMap 10.8 or newer (ACME2_for_ArcMap.tbx) and old ArcGIS Pro versions (ACME2.tbx) and added two new metrics, Volume and depth, based on Telbisz et al. (2025).
 
@@ -69,18 +83,6 @@ ACME2 includes two toolsets. The first one is the Step by Step tools, which incl
 
 
 
-# How to download and use this toolbox in ArcGIS or ArcGIS Pro
-The github site includes the revised ACME toolbox (atbx) file and a python folder, including all python source codes associated with these tools. The user can click "Code" (green color) on the right side of the github page and choose Download Zip.
-
-![image](https://github.com/yingkui2003/ACME2/assets/24683137/9447d858-e4ca-4460-b00b-53a173717eff)
-
-
-
-A zip file of the while github folder will be downloaded to the local computer. Unzip this file will create a ACME-v2-main folder with the three tbx and atbx files, the python folder with source code files, and a TestData folder for the test datasets. The user can use the toolboxes, check the codes, and comtinue imporving this tools. Note that the codes for each tool are not imported into the atbx toolbox yet, so that the atbx toolbox cannot be run just with the tbx file only. The two tbx toolboxes are imported with the codes; thus, they can be used without the code files.  
-
-The toolboxes and tools have been tested in from ArcGIS 10.7, 10.8, ArcGIS Pro 2.8 to 3.1. Errors may occur if using other versions of ArcGIS 10 or ArcGIS Pro.  
-
-Please report any errors or questions to Yingkui Li (yli32@utk.edu).
 
 # Cite this work
 Li, Y., Evans, I.S., Spagnolo, M., Pellitero, R., Barr, I.D., Ely, J.C. 2024. ACME2: An Extended Toolbox for Automated Cirque Metrics Extraction. Geomorphology 445, 108982. https://doi.org/10.1016/j.geomorph.2023.108982.   
